@@ -9,13 +9,13 @@ use std::ffi::CString;
 use std::fs;
 
 mod camera;
-mod sphere;
+mod shapes;
 mod set_uniform;
 
 use set_uniform::*;
 use camera::Camera;
-use sphere::Sphere;
-use set_uniform::set_sphere_buffer;
+use shapes::{Sphere, Triangle};
+use set_uniform::{set_sphere_buffer_object, set_triangle_buffer_object};
 
 fn load_shader(source_path: &str, shader_type: u32) -> u32 {
     let source = fs::read_to_string(source_path).expect("Failed to read shader file");
@@ -48,8 +48,7 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        // Sphere::new([0.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.5),
-        // Sphere::new([0.0, 0.0, 2.0], [1.0, 0.0, 0.0], 0.5),
+        Sphere::new([1.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.7)
     ]
 }
 
@@ -118,13 +117,16 @@ fn main() {
     // Setup scene
 
     let mut spheres = init_spheres();
+    let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
     let mut light_pos = [5.0, 5.0, -3.0];
     let mut t = 0.0;
 
+    //Set uinform values
+    
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         t += 0.1;
-
+        
         match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
@@ -137,12 +139,12 @@ fn main() {
                 _ => (),
             },
             Event::MainEventsCleared => {
-                //Set uinform values
                 set_uniform(shader_program, "u_resolution", UniformType::VEC2([width as f32, height as f32]));
                 set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
                 set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
-                set_sphere_buffer(shader_program, "SphereBuffer", spheres.clone());
-        
+                set_uniform(shader_program, "numOfTriangles", UniformType::INT(triangles.len() as i32));
+                set_sphere_buffer_object(shader_program, "SphereBuffer", spheres.clone());
+                set_triangle_buffer_object(shader_program, "TriangleBuffer", triangles.clone());
                 // Clear the color buffer
                 unsafe { 
                     gl::Clear(gl::COLOR_BUFFER_BIT);
@@ -152,12 +154,15 @@ fn main() {
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();
+        
+                // triangles[0].v3 = [triangles[0].v3[0], f32::sin(t), triangles[0].v3[2]];
                 
                 // spheres[0].pos = [spheres[0].pos[0], f32::sin(t), spheres[0].pos[2]];
                 // spheres[1].pos = [f32::cos(t), spheres[1].pos[1], spheres[1].pos[2]];
             }
             _ => (),
         }
+        
 
 
     });    

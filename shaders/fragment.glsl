@@ -3,7 +3,7 @@
 const int MAX_SPHERES = 100;
 const int MAX_TRIANGLES = 100;
 const float MIN_DIST = 0.001;
-const int MAX_DEPTH = 1000;
+const int MAX_DEPTH = 100;
 
 uniform int numOfSpheres;
 uniform int numOfTriangles;
@@ -46,13 +46,24 @@ struct PaddedSphere {
     vec4 radius;
 };
 
+struct PaddedTriangle {
+    vec4 v1;
+    vec4 v2;
+    vec4 v3;
+    vec4 color;
+};
+
 struct Ray {
     vec3 pos;
     vec3 dir;
 };
 
 uniform SphereBuffer {
-    PaddedSphere paddedSpheres[100];
+    PaddedSphere paddedSpheres[MAX_SPHERES];
+};
+
+uniform TriangleBuffer {
+    PaddedTriangle paddedTriangles[MAX_TRIANGLES];
 };
 
 float dist3(vec3 pos1, vec3 pos2) {
@@ -67,6 +78,12 @@ Sphere getSphere(int index) {
     PaddedSphere paddedSphere = paddedSpheres[index];
 
     return Sphere(paddedSphere.pos.xyz, paddedSphere.color.xyz, paddedSphere.radius.x);
+}
+
+Triangle getTriangle(int index) {
+    PaddedTriangle paddedTriangle = paddedTriangles[index];
+
+    return newTriangle(paddedTriangle.v1.xyz, paddedTriangle.v2.xyz, paddedTriangle.v3.xyz, paddedTriangle.color.xyz);
 }
 
 float sphereDist(Sphere sphere, vec3 pos) {
@@ -137,7 +154,7 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
 
         }
 
-        for (int j = 0; j < 1; j++) {
+        for (int j = 0; j < numOfTriangles; j++) {
             Triangle triangle = triangles[j];
 
             float new_dst = triangleDist(triangle, ray.pos);
@@ -184,8 +201,11 @@ void main() {
     } 
 
     Triangle triangles [MAX_TRIANGLES];
+    for (int i = 0; i < numOfTriangles; i++) {
+        triangles[i] = getTriangle(i);
+    } 
 
-    triangles[0] = newTriangle(vec3(-1.5, -1.5, 1.0), vec3(-1.5, 1.5, 1.0), vec3(1.5, -1.5, 1.0), vec3(0.8078, 0.1647, 0.3569));
+    // FragColor = vec4(1.0);
 
     FragColor = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
 }

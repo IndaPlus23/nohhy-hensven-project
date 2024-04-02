@@ -1,7 +1,7 @@
 use gl::types::GLuint;
 use std::ffi::CString;
 
-use crate::sphere::{Sphere, GlSphere};
+use crate::shapes::{GlSphere, GlTriangle, Sphere, ToGl, Triangle};
 
 pub enum UniformType {
     INT(i32),
@@ -28,15 +28,16 @@ pub fn set_uniform(shader_program : GLuint, uniform_name : &str, uniform_value :
             
         }
     } else {
-        println!("Uniform location {} not found", uniform_name);
+        panic!("Uniform location {} not found", uniform_name);
     } 
 }
 
 
-pub fn set_sphere_buffer(shader_program : GLuint, uniform_name : &str, spheres : Vec<Sphere>) {
+pub fn set_sphere_buffer_object(shader_program : GLuint, uniform_name : &str, values : Vec<Sphere>) {
     let mut sphere_buffer : gl::types::GLuint = 0;
 
-    let gl_spheres : Vec<GlSphere> = spheres.iter().map(|x| x.to_gl_sphere()).collect();
+    let gl_values : Vec<GlSphere> = values.iter().map(|x| x.to_gl()).collect();
+    let mem_size = std::mem::size_of::<GlSphere>();
 
     unsafe {
         gl::GenBuffers(1, &mut sphere_buffer);
@@ -44,8 +45,8 @@ pub fn set_sphere_buffer(shader_program : GLuint, uniform_name : &str, spheres :
 
         gl::BufferData(
             gl::UNIFORM_BUFFER,
-            (gl_spheres.len() * std::mem::size_of::<GlSphere>()) as gl::types::GLsizeiptr,
-            gl_spheres.as_ptr() as *const gl::types::GLvoid,
+            (gl_values.len() * mem_size) as gl::types::GLsizeiptr,
+            gl_values.as_ptr() as *const gl::types::GLvoid,
             gl::STATIC_DRAW
         );
         gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
@@ -53,6 +54,35 @@ pub fn set_sphere_buffer(shader_program : GLuint, uniform_name : &str, spheres :
 
     // Bind buffer to a uniform block in the shader
     let binding_index = 0;
+    unsafe {
+        let block_index = gl::GetUniformBlockIndex(shader_program, CString::new(uniform_name).unwrap().as_ptr());
+
+        gl::UniformBlockBinding(shader_program, block_index, binding_index);
+        gl::BindBufferBase(gl::UNIFORM_BUFFER, binding_index, sphere_buffer);
+    }
+}
+
+pub fn set_triangle_buffer_object(shader_program : GLuint, uniform_name : &str, values : Vec<Triangle>) {
+    let mut sphere_buffer : gl::types::GLuint = 0;
+
+    let gl_values : Vec<GlTriangle> = values.iter().map(|x| x.to_gl()).collect();
+    let mem_size = std::mem::size_of::<GlTriangle>();
+
+    unsafe {
+        gl::GenBuffers(1, &mut sphere_buffer);
+        gl::BindBuffer(gl::UNIFORM_BUFFER, sphere_buffer);
+
+        gl::BufferData(
+            gl::UNIFORM_BUFFER,
+            (gl_values.len() * mem_size) as gl::types::GLsizeiptr,
+            gl_values.as_ptr() as *const gl::types::GLvoid,
+            gl::STATIC_DRAW
+        );
+        gl::BindBuffer(gl::UNIFORM_BUFFER, 0);
+    }
+
+    // Bind buffer to a uniform block in the shader
+    let binding_index = 1;
     unsafe {
         let block_index = gl::GetUniformBlockIndex(shader_program, CString::new(uniform_name).unwrap().as_ptr());
 
