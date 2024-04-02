@@ -1,10 +1,12 @@
 #version 330 core
 
 const int MAX_SPHERES = 100;
+const int MAX_TRIANGLES = 100;
 const float MIN_DIST = 0.001;
 const int MAX_DEPTH = 1000;
 
 uniform int numOfSpheres;
+uniform int numOfTriangles;
 
 uniform vec3 lightPos;
 
@@ -21,6 +23,22 @@ struct Sphere {
     vec3 color;
     float radius;
 };
+
+struct Triangle {
+    vec3 v1;
+    vec3 v2;
+    vec3 v3;
+    vec3 norm;
+    vec3 color;
+};
+
+Triangle newTriangle(vec3 a, vec3 b, vec3 c, vec3 clr) {
+    vec3 ba = b - a;
+    vec3 ac = a - c;
+    vec3 nor = normalize(cross( ba, ac ));
+    
+    return Triangle(a, b, c, nor, clr);
+}
 
 struct PaddedSphere {
     vec4 pos;
@@ -55,6 +73,33 @@ float sphereDist(Sphere sphere, vec3 pos) {
     return dist3(sphere.pos, pos) - sphere.radius;
 }
 
+float dot2(vec3 v ) { return dot(v,v); }
+
+// from https://iquilezles.org/articles/distfunctions/
+float triangleDist(Triangle triangle, vec3 pos) {
+    vec3 a = triangle.v1;
+    vec3 b = triangle.v2;
+    vec3 c = triangle.v3;
+    vec3 p = pos;
+
+    vec3 ba = b - a; vec3 pa = p - a;
+    vec3 cb = c - b; vec3 pb = p - b;
+    vec3 ac = a - c; vec3 pc = p - c;
+    vec3 nor = triangle.norm;
+
+    return sqrt(
+    (sign(dot(cross(ba,nor),pa)) +
+        sign(dot(cross(cb,nor),pb)) +
+        sign(dot(cross(ac,nor),pc))<2.0)
+        ?
+        min( min(
+        dot2(ba*clamp(dot(ba,pa)/dot2(ba),0.0,1.0)-pa),
+        dot2(cb*clamp(dot(cb,pb)/dot2(cb),0.0,1.0)-pb) ),
+        dot2(ac*clamp(dot(ac,pc)/dot2(ac),0.0,1.0)-pc) )
+        :
+        dot(nor,pa)*dot(nor,pa)/dot2(nor) );
+}
+
 vec3 getDir(vec2 uv) {
     return vec3(uv.xy, 0.5);
 }
@@ -71,7 +116,11 @@ float getLightCoefSphere(Ray ray, Sphere sphere) {
     return dot(getLightVec(ray.pos), getSphereNormal(sphere, ray.pos));
 }
 
-vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES]) {
+float getLightCoefTriangle(Ray ray, Triangle triangle) {
+    return dot(getLightVec(ray.pos), triangle.norm);
+}
+
+vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
     float dst = 10000000.0;
     vec3 clr = vec3(0);
 
@@ -79,13 +128,24 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES]) {
         for (int i = 0; i < numOfSpheres; i++) {
             Sphere sphere = spheres[i];
 
-            float new_dst = sphereDist(sphere, ray.pos) - sphere.radius;
+            float new_dst = sphereDist(sphere, ray.pos);
 
             if (new_dst < dst) {
                 dst = new_dst;
                 clr = sphere.color * getLightCoefSphere(ray, sphere);
             }
 
+        }
+
+        for (int j = 0; j < 1; j++) {
+            Triangle triangle = triangles[j];
+
+            float new_dst = triangleDist(triangle, ray.pos);
+
+            if (new_dst < dst) {
+                dst = new_dst;
+                clr = triangle.color * getLightCoefTriangle(ray, triangle);
+            }
         }
 
         if (depth <= 0) {
@@ -99,13 +159,13 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES]) {
     return clr;
 }
 
-vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES]) {
+vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
     vec3 dir = getDir(uv);
     dir = normalize(dir);
 
     Ray ray = Ray(origin, dir);
 
-    return _march(ray, MAX_DEPTH, spheres);
+    return _march(ray, MAX_DEPTH, spheres, triangles);
 }
 
 void main() {
@@ -123,5 +183,9 @@ void main() {
         spheres[i] = getSphere(i);
     } 
 
-    FragColor = vec4(rayMarch(ray_dir, origin, spheres), 1.0);
+    Triangle triangles [MAX_TRIANGLES];
+
+    triangles[0] = newTriangle(vec3(-1.5, -1.5, 1.0), vec3(-1.5, 1.5, 1.0), vec3(1.5, -1.5, 1.0), vec3(0.8078, 0.1647, 0.3569));
+
+    FragColor = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
 }

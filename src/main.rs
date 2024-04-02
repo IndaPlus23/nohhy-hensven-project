@@ -48,8 +48,8 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([0.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.5),
-        Sphere::new([0.0, 0.0, 2.0], [1.0, 0.0, 0.0], 0.5),
+        // Sphere::new([0.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.5),
+        // Sphere::new([0.0, 0.0, 2.0], [1.0, 0.0, 0.0], 0.5),
     ]
 }
 
@@ -122,8 +122,8 @@ fn main() {
     let mut t = 0.0;
 
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
-        t += 0.001;
+        *control_flow = ControlFlow::Poll;
+        t += 0.1;
 
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -142,21 +142,23 @@ fn main() {
                 set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
                 set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
                 set_sphere_buffer(shader_program, "SphereBuffer", spheres.clone());
-
+        
                 // Clear the color buffer
                 unsafe { 
                     gl::Clear(gl::COLOR_BUFFER_BIT);
                     // Draw the triangle
                     gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
-
+        
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();
+                
+                // spheres[0].pos = [spheres[0].pos[0], f32::sin(t), spheres[0].pos[2]];
+                // spheres[1].pos = [f32::cos(t), spheres[1].pos[1], spheres[1].pos[2]];
             }
             _ => (),
         }
 
-        spheres[0].pos = [spheres[0].pos[0], f32::sin(t), spheres[0].pos[2]];
-        spheres[1].pos = [f32::cos(t), spheres[1].pos[1], spheres[1].pos[2]];
+
     });    
 }
