@@ -11,11 +11,13 @@ use std::fs;
 mod camera;
 mod shapes;
 mod set_uniform;
+mod ssbo;
 
 use set_uniform::*;
 use camera::Camera;
 use shapes::{Sphere, Triangle};
 use set_uniform::{set_sphere_buffer_object, set_triangle_buffer_object};
+use ssbo::{set_sphere_ssbo, set_triangle_ssbo};
 
 fn load_shader(source_path: &str, shader_type: u32) -> u32 {
     let source = fs::read_to_string(source_path).expect("Failed to read shader file");
@@ -121,13 +123,19 @@ fn main() {
     let mut light_pos = [5.0, 5.0, -3.0];
     let mut t = 0.0;
 
+
+    // ssbo is set before, does not need to be updated
+    //set_triangle_ssbo(shader_program, "TriangleBuffer", triangles.clone());
+    set_sphere_ssbo(shader_program, "SphereBuffer", spheres.clone());
+    set_triangle_ssbo(shader_program, "TriangleBuffer", triangles.clone());
+
     //Set uinform values
-    
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         t += 0.1;
         
         match event {
+            
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                 WindowEvent::Resized(new_size) => {
@@ -143,8 +151,8 @@ fn main() {
                 set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
                 set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
                 set_uniform(shader_program, "numOfTriangles", UniformType::INT(triangles.len() as i32));
-                set_sphere_buffer_object(shader_program, "SphereBuffer", spheres.clone());
-                set_triangle_buffer_object(shader_program, "TriangleBuffer", triangles.clone());
+                //set_sphere_buffer_object(shader_program, "SphereBuffer", spheres.clone());
+                //set_triangle_buffer_object(shader_program, "TriangleBuffer", triangles.clone());
                 // Clear the color buffer
                 unsafe { 
                     gl::Clear(gl::COLOR_BUFFER_BIT);
