@@ -12,12 +12,14 @@ mod camera;
 mod shapes;
 mod set_uniform;
 mod ssbo;
+mod render_objects_handeler;
 
 use set_uniform::*;
 use camera::Camera;
 use shapes::{Sphere, Triangle};
 use set_uniform::{set_sphere_buffer_object, set_triangle_buffer_object};
-use ssbo::{set_sphere_ssbo, set_triangle_ssbo};
+use ssbo::{Ssbo};
+use render_objects_handeler::{ObjectHandeler};
 
 fn load_shader(source_path: &str, shader_type: u32) -> u32 {
     let source = fs::read_to_string(source_path).expect("Failed to read shader file");
@@ -117,17 +119,31 @@ fn main() {
     }
 
     // Setup scene
-
     let mut spheres = init_spheres();
     let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
     let mut light_pos = [5.0, 5.0, -3.0];
     let mut t = 0.0;
 
 
-    // ssbo is set before, does not need to be updated
-    //set_triangle_ssbo(shader_program, "TriangleBuffer", triangles.clone());
-    set_sphere_ssbo(shader_program, "SphereBuffer", spheres.clone());
-    set_triangle_ssbo(shader_program, "TriangleBuffer", triangles.clone());
+    //// New way to add objects to render, but there is a bug
+    // setup scene with objectHandeler
+    /* 
+    let mut object_handeler = ObjectHandeler::new();
+    object_handeler.add_triangles_from(&mut triangles.clone()); // should instead be a move, I belive
+    object_handeler.add_spheres_from(&mut init_spheres()); // should instead be a move, I belive
+
+    // transfer data to gpu memory
+    object_handeler.update();
+    */
+
+
+    //// New way to add objects to render, which works fine
+    let mut sphere_buffer = Ssbo::new(10);
+    let mut triangle_buffer = Ssbo::new(11);
+    sphere_buffer.initalize(spheres.clone());
+    triangle_buffer.initalize(triangles.clone());
+    
+
 
     //Set uinform values
     event_loop.run(move |event, _, control_flow| {
