@@ -125,24 +125,24 @@ fn main() {
     let mut t = 0.0;
 
 
-    //// New way to add objects to render, but there is a bug
+    //// New way to add objects to render
     // setup scene with objectHandeler
-    /* 
+    
     let mut object_handeler = ObjectHandeler::new();
     object_handeler.add_triangles_from(&mut triangles.clone()); // should instead be a move, I belive
     object_handeler.add_spheres_from(&mut init_spheres()); // should instead be a move, I belive
 
     // transfer data to gpu memory
     object_handeler.update();
-    */
+    
 
-
+    /*
     //// New way to add objects to render, which works fine
     let mut sphere_buffer = Ssbo::new(10);
     let mut triangle_buffer = Ssbo::new(11);
     sphere_buffer.initalize(spheres.clone());
     triangle_buffer.initalize(triangles.clone());
-    
+    */
 
 
     //Set uinform values

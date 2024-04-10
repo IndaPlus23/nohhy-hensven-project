@@ -21,8 +21,8 @@ impl ObjectHandeler{
 
     pub fn new() -> ObjectHandeler{
         ObjectHandeler{
-            ssbo_triangles : Ssbo::new(10),
-            ssbo_spheres : Ssbo::new(11),
+            ssbo_triangles : Ssbo::new(11),
+            ssbo_spheres : Ssbo::new(10),
             cpu_triangles : Vec::new(),
             cpu_spheres : Vec::new(),
             data_is_modified : false
