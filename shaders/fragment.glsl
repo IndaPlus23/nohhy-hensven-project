@@ -10,9 +10,9 @@ uniform int numOfTriangles;
 
 uniform vec3 lightPos;
 
-// uniform vec3 cameraPos;
-// uniform vec3 cameraViewDirection;
-// uniform float cameraFOV;
+uniform vec3 cameraPos;
+uniform vec4 cameraRotationQuaternion;
+uniform float cameraFOV;
 
 uniform vec2 u_resolution;
 
@@ -57,19 +57,6 @@ struct Ray {
     vec3 pos;
     vec3 dir;
 };
-
-/*
-uniform SphereBuffer {
-    PaddedSphere paddedSpheres[MAX_SPHERES];
-};
-
-
-
-uniform TriangleBuffer {
-    PaddedTriangle paddedTriangles[MAX_TRIANGLES];
-};
-
-*/
 
 /// SSBO 
 layout(std430, binding = 10) buffer spheres_
@@ -194,8 +181,28 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
     return clr;
 }
 
+vec4 qMul(vec4 r, vec4 s) {
+    float x = r.x * s.x - r.y * s.y - r.z * s.z - r.w * s.w;
+    float y = r.x * s.y + r.y * s.x - r.z * s.w + r.w * s.z;
+    float z = r.x * s.z + r.y * s.w + r.z * s.x - r.w * s.y;
+    float w = r.x * s.w - r.y * s.z + r.z * s.y - r.w * s.x;
+
+    return vec4(x, y, z, w);
+}
+
+vec3 rotateDir(vec3 ray_dir) {
+    vec4 p = vec4(0.0, ray_dir);
+    vec4 q = cameraRotationQuaternion;
+    vec4 q_inv = vec4(q.x, -q.y, -q.z, -q.w);
+    
+    vec4 res = qMul(qMul(q_inv, p), q);
+
+    return res.yzw;
+}
+
 vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
     vec3 dir = getDir(uv);
+    // dir = rotateDir(dir);
     dir = normalize(dir);
 
     Ray ray = Ray(origin, dir);
@@ -209,8 +216,8 @@ void main() {
 
     // TODO: transform ray_dir depending on camera position
     vec2 ray_dir = uv;
-    // TODO: move origin to camera position
-    vec3 origin = vec3(0);
+    
+    vec3 origin = cameraPos;
 
     // spheres array contains all spheres loaded in from the paddedSpheres UBO
     Sphere spheres [MAX_SPHERES];
