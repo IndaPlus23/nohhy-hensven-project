@@ -9,7 +9,7 @@ pub struct Camera {
 
 impl Camera {
     pub fn new() -> Self {
-        Camera { pos: [0.0, 0.0, 0.0], rotation_axis : [0., 0., 1.], angle : 0., fov : 80.0}
+        Camera { pos: [0.0, 0.0, 0.0], rotation_axis : [0., 1., 0.], angle : 0.0, fov : 80.0}
     }
 
     pub fn get_rotation_quaternion(&self) -> [f32;4] {

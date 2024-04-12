@@ -181,11 +181,12 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
     return clr;
 }
 
+// Quaternion Multiplication
 vec4 qMul(vec4 r, vec4 s) {
     float x = r.x * s.x - r.y * s.y - r.z * s.z - r.w * s.w;
     float y = r.x * s.y + r.y * s.x - r.z * s.w + r.w * s.z;
     float z = r.x * s.z + r.y * s.w + r.z * s.x - r.w * s.y;
-    float w = r.x * s.w - r.y * s.z + r.z * s.y - r.w * s.x;
+    float w = r.x * s.w - r.y * s.z + r.z * s.y + r.w * s.x;
 
     return vec4(x, y, z, w);
 }
@@ -202,7 +203,7 @@ vec3 rotateDir(vec3 ray_dir) {
 
 vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
     vec3 dir = getDir(uv);
-    // dir = rotateDir(dir);
+    dir = rotateDir(dir);
     dir = normalize(dir);
 
     Ray ray = Ray(origin, dir);
@@ -230,7 +231,14 @@ void main() {
         triangles[i] = getTriangle(i);
     } 
 
-    // FragColor = vec4(1.0);
+    // vec3 before = vec3(0.0, 0.0, 0.5);
+    // vec3 after = rotateDir(before);
+
+    // if (sqrt(before.x * before.x + before.y * before.y + before.z * before.z) - sqrt(after.x * after.x + after.y * after.y + after.z * after.z) > 0.0001) {
+    //     FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    // } else {
+    //     FragColor = vec4(abs(after), 1.0);
+    // }
 
     FragColor = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
 }

@@ -52,7 +52,7 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([1.0, 0.0, 0.0], [0.0, 0.0, 0.0], 0.7)
+        Sphere::new([1.0, 0.0, 1.0], [0.0, 0.0, 1.0], 0.7)
     ]
 }
 
