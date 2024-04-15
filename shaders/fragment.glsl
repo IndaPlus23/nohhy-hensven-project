@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 
 const int MAX_SPHERES = 100;
 const int MAX_TRIANGLES = 100;
@@ -58,13 +58,31 @@ struct Ray {
     vec3 dir;
 };
 
+/*
 uniform SphereBuffer {
     PaddedSphere paddedSpheres[MAX_SPHERES];
 };
 
+
+
 uniform TriangleBuffer {
     PaddedTriangle paddedTriangles[MAX_TRIANGLES];
 };
+
+*/
+
+/// SSBO 
+layout(std430, binding = 10) buffer spheres_
+{
+    PaddedSphere paddedSpheres[MAX_SPHERES];
+};
+
+/// SSBO 
+layout(std430, binding = 11) buffer triangles_
+{
+    PaddedTriangle paddedTriangles[MAX_TRIANGLES];
+};
+
 
 float dist3(vec3 pos1, vec3 pos2) {
     float dx = pos1.x - pos2.x;
