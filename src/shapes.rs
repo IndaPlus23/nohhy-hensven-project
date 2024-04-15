@@ -31,10 +31,10 @@ pub struct GlSphere {
 }
 
 pub struct GlTriangle {
-    pub v1 : glm::Vec4,
-    pub v2 : glm::Vec4,
-    pub v3 : glm::Vec4,
-    pub color : glm::Vec4
+    v1 : glm::Vec4,
+    v2 : glm::Vec4,
+    v3 : glm::Vec4,
+    color : glm::Vec4,
 }
 
 impl GlSphere {

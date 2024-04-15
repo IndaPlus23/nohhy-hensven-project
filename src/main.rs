@@ -7,6 +7,7 @@ use glutin::ContextBuilder;
 use glutin::event::{Event, WindowEvent};
 use std::ffi::CString;
 use std::fs;
+use std::time::{Duration, Instant};
 
 mod camera;
 mod shapes;
@@ -48,14 +49,11 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([1.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.7)
+        Sphere::new([0.0, 0.0, 1.0], [0.0, 0.0, 1.0], 0.7),
+        Sphere::new([0.0, 0.0, 1.0], [0.0, 1.0, 1.0], 0.8)
     ]
 }
 
-fn move_test(spheres : &mut Vec<Sphere>, t : f32) {
-    spheres[0].pos[0] = t.sin();
-    spheres[1].pos[1] = t.cos();
-}
 
 fn main() {
     // Define the size of the viewport (width and height in pixels)
@@ -125,7 +123,7 @@ fn main() {
     
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        t += 0.1;
+        t += 0.001;
         
         match event {
             Event::WindowEvent { event, .. } => match event {
@@ -139,6 +137,8 @@ fn main() {
                 _ => (),
             },
             Event::MainEventsCleared => {
+                let start = Instant::now();
+
                 set_uniform(shader_program, "u_resolution", UniformType::VEC2([width as f32, height as f32]));
                 set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
                 set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
@@ -154,11 +154,13 @@ fn main() {
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();
-        
-                // triangles[0].v3 = [triangles[0].v3[0], f32::sin(t), triangles[0].v3[2]];
-                
-                // spheres[0].pos = [spheres[0].pos[0], f32::sin(t), spheres[0].pos[2]];
-                // spheres[1].pos = [f32::cos(t), spheres[1].pos[1], spheres[1].pos[2]];
+
+                let dur = Instant::elapsed(&start);
+                let fps = 1.0 / dur.as_secs_f64();
+
+                spheres[1].pos = [f32::cos(t), spheres[0].pos[1], spheres[0].pos[2]];
+
+                println!("fps: {fps}");
             }
             _ => (),
         }
