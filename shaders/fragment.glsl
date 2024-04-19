@@ -2,7 +2,7 @@
 
 const int MAX_SPHERES = 100;
 const int MAX_TRIANGLES = 100;
-const float MIN_DIST = 0.01;
+const float MIN_DIST = 0.001;
 const int MAX_DEPTH = 100;
 
 uniform int numOfSpheres;
@@ -95,45 +95,31 @@ float sphereDist(Sphere sphere, vec3 pos) {
     return dist3(sphere.pos, pos) - sphere.radius;
 }
 
-float dot2(vec3 v) { return dot(v,v); }
+float dot2(vec3 v ) { return dot(v,v); }
 
 // from https://iquilezles.org/articles/distfunctions/
 float triangleDist(Triangle triangle, vec3 pos) {
     vec3 a = triangle.v1;
     vec3 b = triangle.v2;
     vec3 c = triangle.v3;
+    vec3 p = pos;
 
-    vec3 ba = b - a; 
-    vec3 cb = c - b; 
-    vec3 ac = a - c; 
-
+    vec3 ba = b - a; vec3 pa = p - a;
+    vec3 cb = c - b; vec3 pb = p - b;
+    vec3 ac = a - c; vec3 pc = p - c;
     vec3 nor = triangle.norm;
 
-    vec3 cr_ba_nor = cross(ba,nor);
-    vec3 cr_cb_nor = cross(cb,nor);
-    vec3 cr_ac_nor = cross(ac,nor);
-
-    float dot2_ba = dot2(ba);
-    float dot2_cb = dot2(cb);
-    float dot2_ac = dot2(ac);
-    float dot2_nor = dot2(nor);
-
-    vec3 p = pos;
-    vec3 pb = p - b;
-    vec3 pa = p - a;
-    vec3 pc = p - c;
-
     return sqrt(
-    (sign(dot(cr_ba_nor,pa)) +
-        sign(dot(cr_cb_nor,pb)) +
-        sign(dot(cr_ac_nor,pc))<2.0)
+    (sign(dot(cross(ba,nor),pa)) +
+        sign(dot(cross(cb,nor),pb)) +
+        sign(dot(cross(ac,nor),pc))<2.0)
         ?
         min( min(
-        dot2(ba*clamp(dot(ba,pa)/dot2_ba,0.0,1.0)-pa),
-        dot2(cb*clamp(dot(cb,pb)/dot2_cb,0.0,1.0)-pb)),
-        dot2(ac*clamp(dot(ac,pc)/dot2_ac,0.0,1.0)-pc))
+        dot2(ba*clamp(dot(ba,pa)/dot2(ba),0.0,1.0)-pa),
+        dot2(cb*clamp(dot(cb,pb)/dot2(cb),0.0,1.0)-pb) ),
+        dot2(ac*clamp(dot(ac,pc)/dot2(ac),0.0,1.0)-pc) )
         :
-        dot(nor,pa)*dot(nor,pa)/dot2_nor);
+        dot(nor,pa)*dot(nor,pa)/dot2(nor) );
 }
 
 vec3 getDir(vec2 uv) {
@@ -195,12 +181,10 @@ vec3 floorColor(float x, float z) {
 }
 
 vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
+    float dst = 10000000.0;
     vec3 clr = vec3(0);
-    float dst = 100000.0;
 
     while (dst > MIN_DIST) {
-        dst = 100000.0;
-
         for (int i = 0; i < numOfSpheres; i++) {
             Sphere sphere = spheres[i];
 
@@ -238,8 +222,6 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
         ray = Ray(ray.pos + ray.dir * dst, ray.dir);
         depth -= 1;
     }
-
-    //vec3 glow = vec3(float(MAX_DEPTH - depth) / float(MAX_DEPTH));
 
     return clr;
 }

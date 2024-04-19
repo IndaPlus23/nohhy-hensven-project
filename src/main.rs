@@ -53,7 +53,7 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([1.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.7)
+        Sphere::new([0.0, 1.0, 0.0], [0.0, 1.0, 1.0], 0.7)
     ]
 }
 
@@ -122,7 +122,7 @@ fn main() {
 
     let mut camera = Camera::new();
     camera.pos = [0.0, 1.0, -3.0];
-    camera.set_rotation_axis(&[0.2, 1.0, 0.0]);
+    camera.set_rotation_axis(&[0.0, 1.0, 0.0]);
 
     // New way to add objects to render
     // setup scene with objectHandeler
@@ -130,6 +130,7 @@ fn main() {
     let mut object_handeler = ObjectHandeler::new();
     object_handeler.add_triangles_from(&mut triangles.clone()); // should instead be a move, I belive
     object_handeler.add_spheres_from(&mut spheres.clone()); // should instead be a move, I belive
+
 
     // transfer data to gpu memory
     object_handeler.update();
@@ -146,7 +147,6 @@ fn main() {
     //Set uinform values
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        t += 0.001;
         
         match event {
             
@@ -178,15 +178,13 @@ fn main() {
                     gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
 
-                camera.rotate_around_obj(&[0., 0., 0.], 0.01);
+                camera.rotate_around_obj(&spheres[0].pos, 0.01);
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();
 
                 let dur = Instant::elapsed(&start);
                 let fps = 1.0 / dur.as_secs_f64();
-
-                spheres[1].pos = [f32::cos(t), spheres[0].pos[1], spheres[0].pos[2]];
 
                 println!("fps: {fps}");
             }
