@@ -52,13 +52,8 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([1.0, 0.0, 1.0], [0.0, 0.0, 1.0], 0.7)
+        Sphere::new([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 0.7)
     ]
-}
-
-fn move_test(spheres : &mut Vec<Sphere>, t : f32) {
-    spheres[0].pos[0] = t.sin();
-    spheres[1].pos[1] = t.cos();
 }
 
 fn main() {
@@ -127,7 +122,6 @@ fn main() {
     let mut camera = Camera::new();
     camera.pos = [0.0, 0.0, -1.0];
 
-
     //// New way to add objects to render
     // setup scene with objectHandeler
     
@@ -147,11 +141,10 @@ fn main() {
     triangle_buffer.initalize(triangles.clone());
     */
 
-
     //Set uinform values
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        t += 0.01;
+        t += 0.001;
         
         match event {
             
@@ -180,13 +173,13 @@ fn main() {
                     // Draw the triangle
                     gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
+
+                camera.angle = t;
+
+                camera.rotate_around_obj([0., 0., 0.], t);
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();
-
-                camera.angle += 0.01
-
-                // camera.pos = [f32::cos(t), f32::sin(t), 0.];
             }
             _ => (),
         }

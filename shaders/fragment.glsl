@@ -159,16 +159,16 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
 
         }
 
-        for (int j = 0; j < numOfTriangles; j++) {
-            Triangle triangle = triangles[j];
+        // for (int j = 0; j < numOfTriangles; j++) {
+        //     Triangle triangle = triangles[j];
 
-            float new_dst = triangleDist(triangle, ray.pos);
+        //     float new_dst = triangleDist(triangle, ray.pos);
 
-            if (new_dst < dst) {
-                dst = new_dst;
-                clr = triangle.color * getLightCoefTriangle(ray, triangle);
-            }
-        }
+        //     if (new_dst < dst) {
+        //         dst = new_dst;
+        //         clr = triangle.color * getLightCoefTriangle(ray, triangle);
+        //     }
+        // }
 
         if (depth <= 0) {
             return vec3(0.5);
