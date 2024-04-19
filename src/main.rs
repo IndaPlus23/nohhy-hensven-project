@@ -52,7 +52,7 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([0.0, 0.0, 0.0], [0.0, 0.0, 1.0], 0.7)
+        Sphere::new([0.0, 1.0, 0.0], [0.0, 1.0, 1.0], 0.7)
     ]
 }
 
@@ -120,9 +120,10 @@ fn main() {
     let mut t = 0.0;
 
     let mut camera = Camera::new();
-    camera.pos = [0.0, 0.0, -1.0];
+    camera.pos = [0.0, 1.0, -3.0];
+    camera.set_rotation_axis(&[0.2, 1.0, 0.0]);
 
-    //// New way to add objects to render
+    // New way to add objects to render
     // setup scene with objectHandeler
     
     let mut object_handeler = ObjectHandeler::new();
@@ -144,7 +145,6 @@ fn main() {
     //Set uinform values
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
-        t += 0.001;
         
         match event {
             
@@ -165,7 +165,7 @@ fn main() {
                 set_uniform(shader_program, "numOfTriangles", UniformType::INT(triangles.len() as i32));
                 set_uniform(shader_program, "cameraPos", UniformType::VEC3(camera.pos));
                 set_uniform(shader_program, "cameraRotationQuaternion", UniformType::VEC4(camera.get_rotation_quaternion()));
-                // set_uniform(shader_program, "cameraFOV", UniformType::FLOAT(camera.fov));
+                set_uniform(shader_program, "cameraFOV", UniformType::FLOAT(camera.fov));
 
                 // Clear the color buffer
                 unsafe { 
@@ -174,17 +174,13 @@ fn main() {
                     gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
 
-                camera.angle = t;
-
-                camera.rotate_around_obj([0., 0., 0.], t);
+                camera.rotate_around_obj(&[0., 0., 0.], 0.01);
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();
             }
             _ => (),
         }
-        
-
 
     });    
 }

@@ -123,7 +123,7 @@ float triangleDist(Triangle triangle, vec3 pos) {
 }
 
 vec3 getDir(vec2 uv) {
-    return vec3(uv.xy, 0.5);
+    return vec3(uv.xy, 1.0 / tan(radians(cameraFOV / 2.0)));
 }
 
 vec3 getSphereNormal(Sphere sphere, vec3 pos) {
@@ -140,6 +140,44 @@ float getLightCoefSphere(Ray ray, Sphere sphere) {
 
 float getLightCoefTriangle(Ray ray, Triangle triangle) {
     return dot(getLightVec(ray.pos), triangle.norm);
+}
+
+vec3 intersectXZPlane(Ray ray) {
+    // Check if the ray is parallel to the x-z plane
+    if (abs(ray.dir.y) < 1e-6) {
+        return vec3(0.0, 0.0, 0.0);  // Ray is parallel to the plane
+    }
+
+    float t = -ray.pos.y / ray.dir.y;
+
+    return ray.pos + t * ray.dir;
+}
+
+float distToInt(float number) {
+    float nearest_int = round(number);
+    return abs(number - nearest_int);
+}
+
+vec3 vecPow(vec3 v, int x) {
+    return vec3(
+        pow(v.x, x),
+        pow(v.y, x),
+        pow(v.z, x)
+    );
+}
+
+vec3 floorColor(float x, float z) {
+    vec3 clr;
+
+    if (int(floor(x) + floor(z)) % 2 == 0) {
+        clr = vec3(0.5);
+    } else {
+        clr = vec3(0);
+    }
+
+    clr = 2.0 * clr / dist3(cameraPos, vec3(x, 0, z));
+
+    return clr;
 }
 
 vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
@@ -169,8 +207,15 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
         //         clr = triangle.color * getLightCoefTriangle(ray, triangle);
         //     }
         // }
-
+        
         if (depth <= 0) {
+            if (ray.dir.y < 0) {
+                vec3 intersect = intersectXZPlane(ray);
+
+                float density = 5.0;
+
+                return floorColor(density * intersect.x, density * intersect.z);
+            } 
             return vec3(0.5);
         }
 
@@ -191,6 +236,7 @@ vec4 qMul(vec4 r, vec4 s) {
     return vec4(x, y, z, w);
 }
 
+// Descirbed in https://danceswithcode.net/engineeringnotes/quaternions/quaternions.html
 vec3 rotateDir(vec3 ray_dir) {
     vec4 p = vec4(0.0, ray_dir);
     vec4 q = cameraRotationQuaternion;
