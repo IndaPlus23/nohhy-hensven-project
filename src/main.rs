@@ -53,11 +53,9 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([0.0, 0.0, 1.0], [0.0, 0.0, 1.0], 0.7),
-        Sphere::new([0.0, 0.0, 1.0], [0.0, 1.0, 1.0], 0.8)
+        Sphere::new([1.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.7)
     ]
 }
-
 
 fn main() {
     // Define the size of the viewport (width and height in pixels)
@@ -118,17 +116,20 @@ fn main() {
 
     // Setup scene
     let mut spheres = init_spheres();
-    let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
+    let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 0.0], [-1.5, 1.5, 0.0], [1.5, -1.5, 0.0], [0.8078, 0.1647, 0.3569])];
     let mut light_pos = [5.0, 5.0, -3.0];
     let mut t = 0.0;
 
+    let mut camera = Camera::new();
+    camera.pos = [0.0, 1.0, -3.0];
+    camera.set_rotation_axis(&[0.2, 1.0, 0.0]);
 
-    //// New way to add objects to render
+    // New way to add objects to render
     // setup scene with objectHandeler
     
     let mut object_handeler = ObjectHandeler::new();
     object_handeler.add_triangles_from(&mut triangles.clone()); // should instead be a move, I belive
-    object_handeler.add_spheres_from(&mut init_spheres()); // should instead be a move, I belive
+    object_handeler.add_spheres_from(&mut spheres.clone()); // should instead be a move, I belive
 
     // transfer data to gpu memory
     object_handeler.update();
@@ -141,7 +142,6 @@ fn main() {
     sphere_buffer.initalize(spheres.clone());
     triangle_buffer.initalize(triangles.clone());
     */
-
 
     //Set uinform values
     event_loop.run(move |event, _, control_flow| {
@@ -167,14 +167,18 @@ fn main() {
                 set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
                 set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
                 set_uniform(shader_program, "numOfTriangles", UniformType::INT(triangles.len() as i32));
-                //set_sphere_buffer_object(shader_program, "SphereBuffer", spheres.clone());
-                //set_triangle_buffer_object(shader_program, "TriangleBuffer", triangles.clone());
+                set_uniform(shader_program, "cameraPos", UniformType::VEC3(camera.pos));
+                set_uniform(shader_program, "cameraRotationQuaternion", UniformType::VEC4(camera.get_rotation_quaternion()));
+                set_uniform(shader_program, "cameraFOV", UniformType::FLOAT(camera.fov));
+
                 // Clear the color buffer
                 unsafe { 
                     gl::Clear(gl::COLOR_BUFFER_BIT);
                     // Draw the triangle
                     gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
+
+                camera.rotate_around_obj(&[0., 0., 0.], 0.01);
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();
@@ -188,8 +192,6 @@ fn main() {
             }
             _ => (),
         }
-        
-
 
     });    
 }
