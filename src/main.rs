@@ -1,162 +1,185 @@
-extern crate glutin;
-extern crate gl;
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release // from demo
 
-use glutin::event_loop::{EventLoop, ControlFlow};
-use glutin::window::WindowBuilder;
-use glutin::ContextBuilder;
-use glutin::event::{Event, WindowEvent};
-use std::ffi::CString;
-use std::fs;
+use egui::{Align, RichText, Ui, ViewportId};
+use glium::{backend::{glutin::SimpleWindowBuilder, Facade}, glutin::{api::egl::display, surface::WindowSurface}, implement_buffer_content, implement_uniform_block, implement_vertex, index::PrimitiveType, program, uniform, GlObject, Surface};
+use shapes::Sphere;
+use winit::{
+    event,
+    event_loop::{EventLoop, EventLoopBuilder},
+};
+use std::{fs, ops::RangeInclusive};
 
-mod camera;
-mod sphere;
-mod set_uniform;
+mod gui;
+mod objectHandeler;
+mod shapes;
 
-use set_uniform::*;
-use camera::Camera;
-use sphere::Sphere;
-use set_uniform::set_sphere_buffer;
+use gui::*;
+use objectHandeler::*;
+use crate::shapes::Triangle;
 
-fn load_shader(source_path: &str, shader_type: u32) -> u32 {
-    let source = fs::read_to_string(source_path).expect("Failed to read shader file");
-    let shader = unsafe {gl::CreateShader(shader_type)};
-    let c_str = CString::new(source.as_bytes()).unwrap();
-    unsafe {
-        gl::ShaderSource(shader, 1, &c_str.as_ptr(), std::ptr::null());
-        gl::CompileShader(shader);
-    }
-    
-    let mut success = gl::FALSE as i32;
-    unsafe {
-        gl::GetShaderiv(shader, gl::COMPILE_STATUS, &mut success);
-    }
-    if success != gl::TRUE as i32 {
-        let mut log_length = 0;
-        unsafe {
-            gl::GetShaderiv(shader, gl::INFO_LOG_LENGTH, &mut log_length);
-            let log = vec![0u8; log_length as usize];
-            gl::GetShaderInfoLog(shader, log_length, std::ptr::null_mut(), log.as_ptr() as *mut i8);
-            let log_string = String::from_utf8_lossy(&log);
-            panic!("Failed to compile shader: {}", log_string);
-        }
-    } else {
-        println!("Shader compiled successfully!")
-    }
-
-    shader
-}
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([0.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.5),
-        Sphere::new([0.0, 0.0, 2.0], [1.0, 0.0, 0.0], 0.5),
+        Sphere::new([1.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.7),
+        Sphere::new([0.0, 0.1, 1.5], [1.0, 0.0, 1.0], 0.4)
     ]
 }
 
-fn move_test(spheres : &mut Vec<Sphere>, t : f32) {
-    spheres[0].pos[0] = t.sin();
-    spheres[1].pos[1] = t.cos();
-}
-
 fn main() {
-    // Define the size of the viewport (width and height in pixels)
-    let mut width = 1000;   
-    let mut height = 700; 
+    // setup glinum and window
+    let event_loop = EventLoopBuilder::with_user_event().build().unwrap();
+    let (window, display) = create_display(&event_loop);
 
-    let event_loop = EventLoop::new();
-    let window_builder = WindowBuilder::new().with_title("OpenGL Window");
-    let context = ContextBuilder::new()
-        .build_windowed(window_builder, &event_loop)
-        .unwrap();
-
-    let context = unsafe { context.make_current().unwrap() };
-    gl::load_with(|symbol| context.get_proc_address(symbol) as *const _);
-
-    // Load and compile shaders
-    let vertex_shader = load_shader("shaders/vertex.glsl", gl::VERTEX_SHADER);
-    let fragment_shader = load_shader("shaders/fragment.glsl", gl::FRAGMENT_SHADER);
-
-    // Create shader program
-    let shader_program = unsafe { gl::CreateProgram() };
-
-    unsafe {
-        gl::AttachShader(shader_program, vertex_shader);
-        gl::AttachShader(shader_program, fragment_shader);
-        gl::LinkProgram(shader_program);
-        gl::UseProgram(shader_program);
-    }
-
-    // Define vertex data (positions)
-    let vertices: [f32; 18] = [
-        -1.0, -1.0, 0.0,  // Bottom-left
-         1.0, -1.0, 0.0,  // Bottom-right
-        -1.0,  1.0, 0.0,  // Top-left
-        1.0, -1.0, 0.0,  // Bottom-right
-        1.0,  1.0, 0.0,  // Top-right
-        -1.0,  1.0, 0.0,  // Top-left
-    ];
-
-    // Create and bind vertex buffer object (VBO)
-    let mut vbo: u32 = 0;
-    unsafe {
-        gl::GenBuffers(1, &mut vbo);
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-        gl::BufferData(
-            gl::ARRAY_BUFFER,
-            (vertices.len() * std::mem::size_of::<f32>()) as isize,
-            vertices.as_ptr() as *const gl::types::GLvoid,
-            gl::STATIC_DRAW,
-        );
-    }
-
-    // Specify vertex attribute pointers
-    unsafe {
-        gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE, 3 * std::mem::size_of::<f32>() as i32, std::ptr::null());
-        gl::EnableVertexAttribArray(0);
-    }
+    // setup gui and objects
+    let mut gui_handeler = gui::GuiHandeler::new(egui_glium::EguiGlium::new(ViewportId::ROOT, &display, &window, &event_loop));
+    let mut object_handeler = objectHandeler::ObjectHandeler::new();
 
     // Setup scene
-
     let mut spheres = init_spheres();
-    let mut light_pos = [5.0, 5.0, -3.0];
-    let mut t = 0.0;
+    //let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
+    object_handeler.add_spheres_from(spheres);
+    //object_handeler.add__from(spheres);
 
-    event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
-        t += 0.001;
+    
+    // building the vertex buffer, which contains all the vertices that we will draw
+    let vertex_buffer = {
+
+        // todo remove colors, this code is from a demo
+        #[derive(Copy, Clone)]
+        struct Vertex {
+            position: [f32; 2],
+            color: [f32; 3],
+        }
+        implement_vertex!(Vertex, position, color);
+
+        // todo remove colors, this code is from a demo
+        glium::VertexBuffer::new(&display,
+            &[
+                Vertex { position: [-1.0, -1.0], color: [0.0, 1.0, 0.0] }, 
+                Vertex { position: [ 1.0,  1.0], color: [0.0, 0.0, 1.0] },
+                Vertex { position: [ 1.0, -1.0], color: [1.0, 0.0, 0.0] },
+
+                Vertex { position: [-1.0, 1.0], color: [0.0, 1.0, 0.0] },
+                Vertex { position: [ 1.0,  1.0], color: [0.0, 0.0, 1.0] },
+                Vertex { position: [ -1.0, -1.0], color: [1.0, 0.0, 0.0] },
+            ]
+        ).unwrap()
+    };
+
+    // building the index buffer - indices
+    let index_buffer = glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList);
+
+    // compiling shaders and linking them together
+    let source_vertex = fs::read_to_string("shaders/vertex.glsl").expect("Failed to read shader file");
+    let source_fragment = fs::read_to_string("shaders/fragment.glsl").expect("Failed to read shader file");
+
+    // load shaders
+    let program = glium::Program::from_source(&display, &source_vertex, &source_fragment, None).unwrap();
+
+    // from demo code
+    // In this case we use a closure for simplicity, however keep in mind that most serious
+    // applications should probably use a function that takes the resources as an argument.
+    let _ptr = program.get_frag_data_location("f_color").unwrap(); // will be zero; internal glium location for f_color that is "out" for fragment shader
+    //program.get_shader_storage_blocks().get_key_value(k);
+
+    // load spheres uniform buffer
+    let sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
+
+    let mut should_quit = false;
+    let result = event_loop.run(move |event, target| {
+        let mut redraw = || {
+            
+            if should_quit {
+                target.exit() // exit program/window
+            }
+
+            // change gui
+            gui_handeler.update_gui(&window, &mut should_quit);
+
+            if should_quit {
+                target.exit() // exit program/window
+            }
+
+            {
+                use glium::Surface as _;
+                let mut target = display.draw();
+
+                let color = egui::Rgba::from_rgb(0.0, 0.0, 0.0);
+                target.clear_color(color[0], color[1], color[2], color[3]);
+                let data_ = [0.5, 0.4f32];
+
+                // load spheres uniform buffer
+                //let sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
+                 // load other uniforms
+                //let u_resolution = [1500.0f32, 800.0f32]
+                let u_resolution = [window.inner_size().width as f32, window.inner_size().height as f32];
+                let numOfSpheres = object_handeler.get_num_of_spheres() as i32;
+                let numOfTriangles = object_handeler.get_num_of_triangles() as i32;
+                let mut light_pos = [5.0f32, 5.0f32, -3.0f32];
+
+                // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
+                let matrix = [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0f32]
+                ];
+
+                target.draw(
+                    &vertex_buffer, 
+                    &index_buffer, 
+                    &program, 
+                    //&uniform! {sphere_array: &*sphere_array, u_resolution : u_resolution, numOfSpheres : numOfSpheres, numOfTriangles : numOfTriangles}, 
+                    //&uniform! {sphere_array: &*sphere_array}, 
+                    // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
+                    &uniform! {matrix : matrix, u_resolution : u_resolution, numOfSpheres : numOfSpheres, numOfTriangles : numOfTriangles, sphere_array : &*sphere_array, lightPos : light_pos}, 
+                    &Default::default()
+                ).unwrap();
+
+                // draw things behind egui here
+                gui_handeler.render(&display, &mut target);
+                // draw things on top of egui here
+
+                target.finish().unwrap();
+            }
+        };
 
         match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                WindowEvent::Resized(new_size) => {
-                    (width, height) = new_size.into();
-                    unsafe {
-                        gl::Viewport(0, 0, width as i32, height as i32);
+            event::Event::WindowEvent { event, .. } => {
+                use event::WindowEvent;
+                match &event {
+                    WindowEvent::CloseRequested | WindowEvent::Destroyed => {should_quit = true;}
+                    WindowEvent::Resized(new_size) => {
+                        display.resize((*new_size).into());
                     }
-                }
-                _ => (),
-            },
-            Event::MainEventsCleared => {
-                //Set uinform values
-                set_uniform(shader_program, "u_resolution", UniformType::VEC2([width as f32, height as f32]));
-                set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
-                set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
-                set_sphere_buffer(shader_program, "SphereBuffer", spheres.clone());
-
-                // Clear the color buffer
-                unsafe { 
-                    gl::Clear(gl::COLOR_BUFFER_BIT);
-                    // Draw the triangle
-                    gl::DrawArrays(gl::TRIANGLES, 0, 6);
+                    WindowEvent::RedrawRequested => redraw(),
+                    _ => {}
                 }
 
-                // Swap buffers if using double buffering
-                context.swap_buffers().unwrap();
+                //let event_response = egui_glium.on_event(&window, &event);
+                let event_response = gui_handeler.get_responce(&window, &event);
+                
+                if event_response.repaint {
+                    window.request_redraw();
+                }
+                
+            }
+            event::Event::NewEvents(event::StartCause::ResumeTimeReached { .. }) => {
+                window.request_redraw();
             }
             _ => (),
         }
+    });
+    result.unwrap()
+}
 
-        spheres[0].pos = [spheres[0].pos[0], f32::sin(t), spheres[0].pos[2]];
-        spheres[1].pos = [f32::cos(t), spheres[1].pos[1], spheres[1].pos[2]];
-    });    
+// from demo code
+fn create_display(
+    event_loop: &EventLoop<()>,
+) -> (winit::window::Window, glium::Display<WindowSurface>) {
+    SimpleWindowBuilder::new()
+        .set_window_builder(winit::window::WindowBuilder::new().with_resizable(true))
+        .with_inner_size(1000, 700)
+        .with_title("egui_glium example")
+        .build(event_loop)
 }
