@@ -7,15 +7,17 @@ use winit::{
     event,
     event_loop::{EventLoop, EventLoopBuilder},
 };
-use std::{fs, ops::RangeInclusive};
+use std::{fs, ops::RangeInclusive, time::Instant};
 
 mod gui;
 mod objectHandeler;
 mod shapes;
+mod camera;
 
 use gui::*;
 use objectHandeler::*;
 use crate::shapes::Triangle;
+use camera::*;
 
 
 fn init_spheres() -> Vec<Sphere> {
@@ -36,8 +38,9 @@ fn main() {
 
     // Setup scene
     let mut spheres = init_spheres();
-    //let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
+    let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
     object_handeler.add_spheres_from(spheres);
+    object_handeler.add_triangles_from(triangles);
     //object_handeler.add__from(spheres);
 
     
@@ -82,19 +85,38 @@ fn main() {
     let _ptr = program.get_frag_data_location("f_color").unwrap(); // will be zero; internal glium location for f_color that is "out" for fragment shader
     //program.get_shader_storage_blocks().get_key_value(k);
 
-    // load spheres uniform buffer
-    let sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
+    // load sphere and triangle uniform buffer
+    let mut sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
+    let mut triangle_array = object_handeler.get_uniform_buffer_triangles(&display);
+
+    // create camera 
+    let mut camera = Camera::new();
+    camera.pos = [0.0, 1.0, -3.0];
+    camera.set_rotation_axis(&[0.0, 1.0, 0.0]);
 
     let mut should_quit = false;
+    let mut should_update_objects = false;
     let result = event_loop.run(move |event, target| {
-        let mut redraw = || {
+
+        let start = Instant::now();
+
+        
+        let mut redraw = |camera : &mut Camera| {
             
+            camera.rotate_around_obj(&[1.0, 1.0, 1.0], 0.01);
+
+
             if should_quit {
                 target.exit() // exit program/window
             }
 
             // change gui
-            gui_handeler.update_gui(&window, &mut should_quit);
+            gui_handeler.update_gui(&window, &mut should_quit, &mut object_handeler, &mut should_update_objects);
+
+            if should_update_objects {
+                sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
+                triangle_array = object_handeler.get_uniform_buffer_triangles(&display);
+            }
 
             if should_quit {
                 target.exit() // exit program/window
@@ -132,7 +154,19 @@ fn main() {
                     //&uniform! {sphere_array: &*sphere_array, u_resolution : u_resolution, numOfSpheres : numOfSpheres, numOfTriangles : numOfTriangles}, 
                     //&uniform! {sphere_array: &*sphere_array}, 
                     // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
-                    &uniform! {matrix : matrix, u_resolution : u_resolution, numOfSpheres : numOfSpheres, numOfTriangles : numOfTriangles, sphere_array : &*sphere_array, lightPos : light_pos}, 
+                    &uniform! {
+                        // Format: name of uniform (in glsl) | resource/data
+                        matrix : matrix, 
+                        u_resolution : u_resolution, 
+                        numOfSpheres : numOfSpheres, 
+                        numOfTriangles : numOfTriangles, 
+                        sphere_array : &*sphere_array, 
+                        lightPos : light_pos,
+                        cameraPos : camera.pos,
+                        cameraRotationQuaternion : camera.get_rotation_quaternion(), 
+                        cameraFOV : camera.fov,
+                        triangle_array : &*triangle_array
+                    }, 
                     &Default::default()
                 ).unwrap();
 
@@ -152,13 +186,20 @@ fn main() {
                     WindowEvent::Resized(new_size) => {
                         display.resize((*new_size).into());
                     }
-                    WindowEvent::RedrawRequested => redraw(),
+                    WindowEvent::RedrawRequested => redraw(&mut camera),
                     _ => {}
                 }
 
                 //let event_response = egui_glium.on_event(&window, &event);
                 let event_response = gui_handeler.get_responce(&window, &event);
-                
+            
+
+            
+                let dur = Instant::elapsed(&start);
+                let fps = 1.0 / dur.as_secs_f64();
+                println!("fps: {fps}");
+
+
                 if event_response.repaint {
                     window.request_redraw();
                 }
@@ -169,6 +210,9 @@ fn main() {
             }
             _ => (),
         }
+
+        
+        
     });
     result.unwrap()
 }

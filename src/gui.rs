@@ -1,9 +1,12 @@
 use std::ops::RangeInclusive;
 
+use egui::{Context, Ui};
 use egui_glium::*;
 use glium::glutin::surface::WindowSurface;
 use glutin::{event::{Event, WindowEvent}, event_loop::EventLoopWindowTarget};
 use winit::window::Window;
+
+use crate::{objectHandeler, ObjectHandeler};
 
 pub struct GuiHandeler{
     egui_glium : EguiGlium
@@ -27,11 +30,41 @@ impl GuiHandeler{
     }
 
 
-    pub fn update_gui(&mut self, window : &Window, should_quit : &mut bool){
+    pub fn update_gui(&mut self, window : &Window, should_quit : &mut bool, mut objectHandeler : &mut ObjectHandeler, mut should_update_objects : &mut bool){
 
+        *should_update_objects = false;
 
         self.egui_glium.run(&window, |egui_ctx| {
+            
 
+            //self.collapsing_objects_tree(egui_ctx, &mut objectHandeler);
+            
+            egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
+                
+                // Temporary: This should really be inside a functions for simplicty - but the borrow checker goes mad with two mutable borrow with self
+                ui.collapsing("Spheres", |ui_inside| { 
+                    let spheres = objectHandeler.get_spheres_reference();
+                    let mut id_counter = 0;
+                    spheres.iter_mut().for_each(|sphere|{
+                        ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
+                            ui_inside_inside.label("Radius");
+                            if ui_inside_inside.add(egui::widgets::Slider::new(&mut sphere.radius, RangeInclusive::new(0f32, 100f32))).enabled(){
+                                *should_update_objects = true;
+                                println!("Hola");
+                            };
+                            ui_inside_inside.label("Color");
+                            if egui::color_picker::color_edit_button_rgb(ui_inside_inside, &mut sphere.color).enabled(){
+                                *should_update_objects = true;
+                            };
+        
+                        });
+                        id_counter += 1;
+                    });
+                });
+            });
+            
+
+            /* 
             egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
                 ui.heading("Hello World!");
 
@@ -42,6 +75,24 @@ impl GuiHandeler{
                 //ui.button(RichText::new("delete").color(ui.visuals().warn_fg_color)).clicked();
                 ui.heading("Not implemented logic yet - just for show!");
                 ui.collapsing("Objects", |ui| { 
+
+                    
+                    ui.collapsing("Camera - TODO", |ui| { 
+                        let mut custom_value = 10;
+                        ui.label("Angle 1");
+                        ui.add(egui::widgets::Slider::new(&mut custom_value, RangeInclusive::new(0, 360)));
+                        ui.label("Angle 2");
+                        ui.add(egui::widgets::Slider::new(&mut custom_value, RangeInclusive::new(0, 360)));
+                        ui.label("Fov");
+                        ui.add(egui::widgets::Slider::new(&mut custom_value, RangeInclusive::new(0, 1)));
+   
+
+                    });
+
+                    // show objects
+                    
+
+                    /* 
                     ui.collapsing("Spheres", |ui| { 
                         ui.collapsing("Sphere1", |ui| { 
                             let mut custom_value = 10;
@@ -125,14 +176,48 @@ impl GuiHandeler{
                             egui::color_picker::color_edit_button_rgb(ui, &mut [0.0f32, 0.0f32, 0.0f32]);
                         });
                     });
+                    */
                 });
-            });
+                */
+            
 
+            
             egui::TopBottomPanel::bottom("myawdwad_side_panel").show(egui_ctx, |ui| {
                 ui.heading("Hello Worldawdwd!");
 
             });
+            
         });
     }
+
+
+    fn collapsing_objects_tree(&self, egui_ctx : &Context, objectHandeler : &mut ObjectHandeler){
+
+        egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
+            ui.collapsing("Spheres", |ui_inside| { 
+                let spheres = objectHandeler.get_spheres_reference();
+                let id_counter = 0;
+                spheres.iter_mut().for_each(|sphere|{
+                    ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
+                        ui_inside_inside.label("Radius");
+                        ui_inside_inside.add(egui::widgets::Slider::new(&mut sphere.radius, RangeInclusive::new(0f32, 100f32)));
+                        ui_inside_inside.label("Color");
+                        egui::color_picker::color_edit_button_rgb(ui_inside_inside, &mut sphere.color)
+    
+                    });
+                });
+            });
+        });     
+    }
+
+}
+
+
+
+struct CollapsingObjectsTree{
+
+}
+
+impl CollapsingObjectsTree{
 
 }

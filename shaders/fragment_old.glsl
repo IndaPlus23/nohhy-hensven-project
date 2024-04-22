@@ -204,7 +204,7 @@ float triangleDist(Triangle triangle, vec3 pos) {
 }
 
 vec3 getDir(vec2 uv) {
-    return vec3(uv.xy, 1.0 / tan(radians(cameraFOV / 2.0)));
+    return vec3(uv.xy, 0.5);
 }
 
 vec3 getSphereNormal(Sphere sphere, vec3 pos) {
@@ -223,47 +223,9 @@ float getLightCoefTriangle(Ray ray, Triangle triangle) {
     return dot(getLightVec(ray.pos), triangle.norm);
 }
 
-vec3 intersectXZPlane(Ray ray) {
-    // Check if the ray is parallel to the x-z plane
-    if (abs(ray.dir.y) < 1e-6) {
-        return vec3(0.0, 0.0, 0.0);  // Ray is parallel to the plane
-    }
-
-    float t = -ray.pos.y / ray.dir.y;
-
-    return ray.pos + t * ray.dir;
-}
-
-float distToInt(float number) {
-    float nearest_int = round(number);
-    return abs(number - nearest_int);
-}
-
-vec3 vecPow(vec3 v, int x) {
-    return vec3(
-        pow(v.x, x),
-        pow(v.y, x),
-        pow(v.z, x)
-    );
-}
-
-vec3 floorColor(float x, float z) {
-    vec3 clr;
-
-    if (int(floor(x) + floor(z)) % 2 == 0) {
-        clr = vec3(0.5);
-    } else {
-        clr = vec3(0);
-    }
-
-    clr = 2.0 * clr / dist3(cameraPos, vec3(x, 0, z));
-
-    return clr;
-}
-
 vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
     float dst = 10000000.0;
-    vec3 clr = vec3(0);
+    vec3 clr = vec3(0.0);
 
     while (dst > MIN_DIST) {
         for (int i = 0; i < numOfSpheres; i++) {
@@ -275,28 +237,27 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
                 dst = new_dst;
                 clr = sphere.color * getLightCoefSphere(ray, sphere);
             }
+            
 
         }
 
-        // for (int j = 0; j < numOfTriangles; j++) {
-        //     Triangle triangle = triangles[j];
 
-        //     float new_dst = triangleDist(triangle, ray.pos);
+        /*
+        for (int j = 0; j < numOfTriangles; j++) {
+            Triangle triangle = triangles[j];
 
-        //     if (new_dst < dst) {
-        //         dst = new_dst;
-        //         clr = triangle.color * getLightCoefTriangle(ray, triangle);
-        //     }
-        // }
+            float new_dst = triangleDist(triangle, ray.pos);
+
+            if (new_dst < dst) {
+                dst = new_dst;
+                clr = triangle.color * getLightCoefTriangle(ray, triangle);
+            }
+        }
+        */
+
+
         
         if (depth <= 0) {
-            if (ray.dir.y < 0) {
-                vec3 intersect = intersectXZPlane(ray);
-
-                float density = 5.0;
-
-                return floorColor(density * intersect.x, density * intersect.z);
-            } 
             return vec3(0.5);
         }
 
@@ -307,30 +268,8 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
     return clr;
 }
 
-// Quaternion Multiplication
-vec4 qMul(vec4 r, vec4 s) {
-    float x = r.x * s.x - r.y * s.y - r.z * s.z - r.w * s.w;
-    float y = r.x * s.y + r.y * s.x - r.z * s.w + r.w * s.z;
-    float z = r.x * s.z + r.y * s.w + r.z * s.x - r.w * s.y;
-    float w = r.x * s.w - r.y * s.z + r.z * s.y + r.w * s.x;
-
-    return vec4(x, y, z, w);
-}
-
-// Descirbed in https://danceswithcode.net/engineeringnotes/quaternions/quaternions.html
-vec3 rotateDir(vec3 ray_dir) {
-    vec4 p = vec4(0.0, ray_dir);
-    vec4 q = cameraRotationQuaternion;
-    vec4 q_inv = vec4(q.x, -q.y, -q.z, -q.w);
-    
-    vec4 res = qMul(qMul(q_inv, p), q);
-
-    return res.yzw;
-}
-
 vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
     vec3 dir = getDir(uv);
-    dir = rotateDir(dir);
     dir = normalize(dir);
 
     Ray ray = Ray(origin, dir);
@@ -338,34 +277,41 @@ vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Triangle triang
     return _march(ray, MAX_DEPTH, spheres, triangles);
 }
 
+
 void main() {
+    
     // Screen coordinates normalized to [-1, 1]
     vec2 uv = 2.0 * gl_FragCoord.xy / u_resolution.xy - 1.0;
 
     // TODO: transform ray_dir depending on camera position
     vec2 ray_dir = uv;
-    
-    vec3 origin = cameraPos;
+    // TODO: move origin to camera position
+    vec3 origin = vec3(0.0);
 
     // spheres array contains all spheres loaded in from the paddedSpheres UBO
+    /*
+    Sphere spheres [MAX_SPHERES];
+    for (int i = 0; i < numOfSpheres; i++) {
+        //spheres[i] = getSphere(i);
+        spheres[i] = getSphereFromIndex(i);
+        
+    } 
+    */
+
     Sphere spheres [MAX_SPHERES];
     for (int i = 0; i < numOfSpheres; i++) {
         spheres[i] = getSphere(i);
+        //spheres[i] = getSphereFromIndex(i);
+        
     } 
 
+    
     Triangle triangles [MAX_TRIANGLES];
+    
     for (int i = 0; i < numOfTriangles; i++) {
         triangles[i] = getTriangle(i);
     } 
-
-    // vec3 before = vec3(0.0, 0.0, 0.5);
-    // vec3 after = rotateDir(before);
-
-    // if (sqrt(before.x * before.x + before.y * before.y + before.z * before.z) - sqrt(after.x * after.x + after.y * after.y + after.z * after.z) > 0.0001) {
-    //     f_color = vec4(1.0, 0.0, 0.0, 1.0);
-    // } else {
-    //     f_color = vec4(abs(after), 1.0);
-    // }
+    
 
     f_color = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
 }
