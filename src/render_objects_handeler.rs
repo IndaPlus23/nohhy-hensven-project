@@ -56,6 +56,16 @@ impl ObjectHandeler{
         self.data_is_modified = true;
     }
 
+    pub fn set_boxes(&mut self, render_objects : Vec<Box>){
+        self.cpu_boxes= render_objects;
+        self.data_is_modified = true;
+    }
+
+    pub fn set_spheres(&mut self, render_objects : Vec<Sphere>){
+        self.cpu_spheres = render_objects;
+        self.data_is_modified = true;
+    }
+
     // TODO: remove()
 
 

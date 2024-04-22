@@ -53,7 +53,7 @@ fn load_shader(source_path: &str, shader_type: u32) -> u32 {
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([0.0, 1.0, 0.0], [0.0, 1.0, 1.0], 0.7)
+        Sphere::new([0.0, 1.0, 0.0], [0.8078, 0.1647, 0.3569], 0.7)
     ]
 }
 
@@ -128,13 +128,6 @@ fn main() {
     // setup scene with objectHandeler
     
     let mut object_handeler = ObjectHandeler::new();
-    object_handeler.add_boxes_from(&mut boxes.clone()); // should instead be a move, I belive
-    object_handeler.add_spheres_from(&mut spheres.clone()); // should instead be a move, I belive
-
-
-    // transfer data to gpu memory
-    object_handeler.update();
-    
 
     /*
     //// New way to add objects to render, which works fine
@@ -144,10 +137,17 @@ fn main() {
     triangle_buffer.initalize(triangles.clone());
     */
 
+    let mut t : f32 = 0.0;
+
+    
+    camera.rotate_around_obj(&[0., 0., 0.], 1.0);
+
     //Set uinform values
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         
+        t += 0.001;
+
         match event {
             
             Event::WindowEvent { event, .. } => match event {
@@ -163,6 +163,12 @@ fn main() {
             Event::MainEventsCleared => {
                 let start = Instant::now();
 
+                object_handeler.set_boxes(boxes.clone()); // should instead be a move, I belive
+                object_handeler.set_spheres(spheres.clone()); // should instead be a move, I belive
+            
+                // transfer data to gpu memory
+                object_handeler.update();
+
                 set_uniform(shader_program, "u_resolution", UniformType::VEC2([width as f32, height as f32]));
                 set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
                 set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
@@ -173,7 +179,8 @@ fn main() {
                 // Render modes
                 // 0 : Normal
                 // 1 : Intersect
-                set_uniform(shader_program, "renderMode", UniformType::INT(1));
+                set_uniform(shader_program, "renderMode", UniformType::INT(2));
+                set_uniform(shader_program, "smoothness", UniformType::FLOAT(0.3));
 
                 // Clear the color buffer
                 unsafe { 
@@ -182,7 +189,7 @@ fn main() {
                     gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
 
-                camera.rotate_around_obj(&[0., 0., 0.], 0.01);
+                boxes[0].pos[2] = f32::sin(t);
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();

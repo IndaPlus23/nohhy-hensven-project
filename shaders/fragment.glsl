@@ -11,6 +11,7 @@ uniform int numOfBoxes;
 // 0 : Normal
 // 1 : Intersect
 uniform int renderMode;
+uniform float smoothness;
 
 uniform vec3 lightPos;
 
@@ -80,6 +81,12 @@ Box getBox(int index) {
     PaddedBox paddedBox = paddedBoxes[index];
 
     return Box(paddedBox.pos.xyz, paddedBox.dim.xyz, paddedBox.color.xyz);
+}
+
+// from https://www.youtube.com/watch?v=Cp5WWtMoeKg
+float smoothMin(float dstA, float dstB, float k) {
+    float h = max(k - abs(dstA - dstB), 0.0) / k;
+    return min(dstA, dstB) - h*h*h*k/6.0;
 }
 
 float sphereDist(Sphere sphere, vec3 pos) {
@@ -190,6 +197,32 @@ vec4 minDist(vec3 pos, Sphere spheres[MAX_SPHERES], Box boxes[MAX_BOXES]) {
 
             if (new_dst > dst) {
                 dst = new_dst;
+                clr = box.color;
+            }
+        }  
+    } else if (renderMode == 2) {
+        dst = 10000000.0;
+
+        for (int i = 0; i < numOfSpheres; i++) {
+            Sphere sphere = spheres[i];
+
+            float new_dst = sphereDist(sphere, pos);
+            float s_dst = smoothMin(dst, new_dst, smoothness);
+
+            if (s_dst < dst) {
+                dst = s_dst;
+                clr = sphere.color;
+            }
+        }
+
+        for (int i = 0; i < numOfBoxes; i++) {
+            Box box = boxes[i];
+
+            float new_dst = boxDist(box, pos);
+            float s_dst = smoothMin(dst, new_dst, smoothness);
+
+            if (s_dst < dst) {
+                dst = s_dst;
                 clr = box.color;
             }
         }  
