@@ -17,7 +17,7 @@ mod render_objects_handeler;
 
 use set_uniform::*;
 use camera::Camera;
-use shapes::{Sphere, Triangle};
+use shapes::{Sphere, Box};
 use set_uniform::{set_sphere_buffer_object, set_triangle_buffer_object};
 use ssbo::{Ssbo};
 use render_objects_handeler::{ObjectHandeler};
@@ -116,7 +116,7 @@ fn main() {
 
     // Setup scene
     let mut spheres = init_spheres();
-    let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 0.0], [-1.5, 1.5, 0.0], [1.5, -1.5, 0.0], [0.8078, 0.1647, 0.3569])];
+    let mut boxes : Vec<Box> = vec![Box::new([0.0, 1.0, 0.0], [0.3, 1.5, 0.2], [0.8078, 0.1647, 0.3569])];
     let mut light_pos = [5.0, 5.0, -3.0];
     let mut t = 0.0;
 
@@ -128,7 +128,7 @@ fn main() {
     // setup scene with objectHandeler
     
     let mut object_handeler = ObjectHandeler::new();
-    object_handeler.add_triangles_from(&mut triangles.clone()); // should instead be a move, I belive
+    object_handeler.add_boxes_from(&mut boxes.clone()); // should instead be a move, I belive
     object_handeler.add_spheres_from(&mut spheres.clone()); // should instead be a move, I belive
 
 
@@ -166,10 +166,14 @@ fn main() {
                 set_uniform(shader_program, "u_resolution", UniformType::VEC2([width as f32, height as f32]));
                 set_uniform(shader_program, "lightPos", UniformType::VEC3(light_pos));
                 set_uniform(shader_program, "numOfSpheres", UniformType::INT(spheres.len() as i32));
-                set_uniform(shader_program, "numOfTriangles", UniformType::INT(triangles.len() as i32));
+                set_uniform(shader_program, "numOfBoxes", UniformType::INT(boxes.len() as i32));
                 set_uniform(shader_program, "cameraPos", UniformType::VEC3(camera.pos));
                 set_uniform(shader_program, "cameraRotationQuaternion", UniformType::VEC4(camera.get_rotation_quaternion()));
                 set_uniform(shader_program, "cameraFOV", UniformType::FLOAT(camera.fov));
+                // Render modes
+                // 0 : Normal
+                // 1 : Intersect
+                set_uniform(shader_program, "renderMode", UniformType::INT(1));
 
                 // Clear the color buffer
                 unsafe { 
@@ -178,7 +182,7 @@ fn main() {
                     gl::DrawArrays(gl::TRIANGLES, 0, 6);
                 }
 
-                camera.rotate_around_obj(&spheres[0].pos, 0.01);
+                camera.rotate_around_obj(&[0., 0., 0.], 0.01);
         
                 // Swap buffers if using double buffering
                 context.swap_buffers().unwrap();

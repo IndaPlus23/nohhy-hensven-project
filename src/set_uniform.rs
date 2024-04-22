@@ -1,7 +1,7 @@
 use gl::types::GLuint;
 use std::ffi::CString;
 
-use crate::shapes::{GlSphere, GlTriangle, Sphere, ToGl, Triangle};
+use crate::shapes::{GlSphere, GlBox, Sphere, ToGl, Box};
 
 pub enum UniformType {
     INT(i32),
@@ -64,11 +64,11 @@ pub fn set_sphere_buffer_object(shader_program : GLuint, uniform_name : &str, va
     }
 }
 
-pub fn set_triangle_buffer_object(shader_program : GLuint, uniform_name : &str, values : Vec<Triangle>) {
+pub fn set_triangle_buffer_object(shader_program : GLuint, uniform_name : &str, values : Vec<Box>) {
     let mut sphere_buffer : gl::types::GLuint = 0;
 
-    let gl_values : Vec<GlTriangle> = values.iter().map(|x| x.to_gl()).collect();
-    let mem_size = std::mem::size_of::<GlTriangle>();
+    let gl_values : Vec<GlBox> = values.iter().map(|x| x.to_gl()).collect();
+    let mem_size = std::mem::size_of::<GlBox>();
 
     unsafe {
         gl::GenBuffers(1, &mut sphere_buffer);
@@ -124,8 +124,8 @@ pub fn set_sphere_ssbo(shader_program : GLuint, uniform_name : &str, values : Ve
 pub fn set_triangle_ssbo(shader_program : GLuint, uniform_name : &str, values : Vec<Triangle>) {
     let mut sphere_buffer : gl::types::GLuint = 0;
 
-    let gl_values : Vec<GlTriangle> = values.iter().map(|x| x.to_gl()).collect();
-    let mem_size = std::mem::size_of::<GlTriangle>();
+    let gl_values : Vec<GlBox> = values.iter().map(|x| x.to_gl()).collect();
+    let mem_size = std::mem::size_of::<GlBox>();
 
     unsafe {
         gl::GenBuffers(1, &mut sphere_buffer);

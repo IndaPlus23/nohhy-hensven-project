@@ -15,10 +15,9 @@ pub struct Sphere {
 }
 
 #[derive(Clone, Copy)]
-pub struct Triangle {
-    pub v1 : [f32;3],
-    pub v2 : [f32;3],
-    pub v3 : [f32;3],
+pub struct Box {
+    pub pos : [f32;3],
+    pub dim : [f32;3],
     pub color : [f32;3]
 }
 
@@ -30,10 +29,9 @@ pub struct GlSphere {
     pub radius : glm::Vec4,
 }
 
-pub struct GlTriangle {
-    v1 : glm::Vec4,
-    v2 : glm::Vec4,
-    v3 : glm::Vec4,
+pub struct GlBox {
+    pos : glm::Vec4,
+    dim : glm::Vec4,
     color : glm::Vec4,
 }
 
@@ -47,15 +45,14 @@ impl GlSphere {
     }
 }
 
-impl GlTriangle {
-    pub fn new(v1 : [f32; 3], v2 : [f32; 3], v3 : [f32; 3], color : [f32;3]) -> Self {
-        let new_v1 = glm::vec4(v1[0], v1[1], v1[2], 1.0);
-        let new_v2 = glm::vec4(v2[0], v2[1], v2[2], 1.0);
-        let new_v3 = glm::vec4(v3[0], v3[1], v3[2], 1.0);
+impl GlBox {
+    pub fn new(pos : [f32; 3], dim : [f32; 3], color : [f32;3]) -> Self {
+        let new_pos = glm::vec4(pos[0], pos[1], pos[2], 1.0);
+        let new_dim = glm::vec4(dim[0], dim[1], dim[2], 1.0);
 
         let new_color = glm::vec4(color[0], color[1], color[2], 1.0);
 
-        GlTriangle { v1: new_v1, v2: new_v2, v3: new_v3, color: new_color }
+        GlBox { pos: new_pos, dim: new_dim, color: new_color }
     }
 }
 
@@ -70,14 +67,14 @@ impl ToGl for Sphere {
     }
 }
 
-impl ToGl for Triangle {
-    type Output = GlTriangle;
+impl ToGl for Box {
+    type Output = GlBox;
 
     fn to_gl(&self) -> Self::Output {
-        GlTriangle::new(self.v1, self.v2, self.v3, self.color)
+        GlBox::new(self.pos, self.dim,  self.color)
     }
     fn mem_size(&self) -> usize {
-        std::mem::size_of::<GlTriangle>()
+        std::mem::size_of::<GlBox>()
     }
 }
 
@@ -88,8 +85,8 @@ impl Sphere {
 
 }
 
-impl Triangle {
-    pub fn new(v1 : [f32; 3], v2 : [f32; 3], v3 : [f32; 3], color : [f32; 3]) -> Self {
-        Triangle { v1, v2, v3, color}
+impl Box {
+    pub fn new(pos : [f32; 3], dim : [f32; 3],  color : [f32; 3]) -> Self {
+        Box { pos, dim, color}
     }
 }

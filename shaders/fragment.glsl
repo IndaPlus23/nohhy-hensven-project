@@ -1,12 +1,16 @@
 #version 450 core
 
 const int MAX_SPHERES = 100;
-const int MAX_TRIANGLES = 100;
+const int MAX_BOXES = 100;
 const float MIN_DIST = 0.001;
 const int MAX_DEPTH = 100;
 
 uniform int numOfSpheres;
-uniform int numOfTriangles;
+uniform int numOfBoxes;
+
+// 0 : Normal
+// 1 : Intersect
+uniform int renderMode;
 
 uniform vec3 lightPos;
 
@@ -36,6 +40,12 @@ struct PaddedSphere {
     vec4 radius;
 };
 
+struct PaddedBox {
+    vec4 pos;
+    vec4 dim;
+    vec4 color;
+};
+
 struct Ray {
     vec3 pos;
     vec3 dir;
@@ -45,6 +55,11 @@ struct Ray {
 layout(std430, binding = 10) buffer spheres_
 {
     PaddedSphere paddedSpheres[MAX_SPHERES];
+};
+
+layout(std430, binding = 11) buffer boxes_
+{
+    PaddedBox paddedBoxes[MAX_BOXES];
 };
 
 float dist3(vec3 pos1, vec3 pos2) {
@@ -59,6 +74,12 @@ Sphere getSphere(int index) {
     PaddedSphere paddedSphere = paddedSpheres[index];
 
     return Sphere(paddedSphere.pos.xyz, paddedSphere.color.xyz, paddedSphere.radius.x);
+}
+
+Box getBox(int index) {
+    PaddedBox paddedBox = paddedBoxes[index];
+
+    return Box(paddedBox.pos.xyz, paddedBox.dim.xyz, paddedBox.color.xyz);
 }
 
 float sphereDist(Sphere sphere, vec3 pos) {
@@ -120,30 +141,87 @@ vec3 floorColor(float x, float z) {
     return clr;
 }
 
-vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES]) {
-    float dst = 10000000.0;
-    vec3 clr = vec3(0);
+vec4 minDist(vec3 pos, Sphere spheres[MAX_SPHERES], Box boxes[MAX_BOXES]) {
+    vec3 clr;
+    float dst;
 
-    while (dst > MIN_DIST) {
+    if (renderMode == 0) {
+        dst = 10000000.0;
+
         for (int i = 0; i < numOfSpheres; i++) {
             Sphere sphere = spheres[i];
 
-            float new_dst = sphereDist(sphere, ray.pos);
+            float new_dst = sphereDist(sphere, pos);
 
             if (new_dst < dst) {
                 dst = new_dst;
-                clr = sphere.color * getLightCoefSphere(ray, sphere);
+                clr = sphere.color;
             }
         }
 
-        Box box = Box(vec3(1.0, 0.0, 0.0), vec3(1.0, 1.5, 0.3), vec3(0.8275, 0.3255, 0.502));
+        for (int i = 0; i < numOfBoxes; i++) {
+            Box box = boxes[i];
 
-        float new_dst = boxDist(box, ray.pos);
+            float new_dst = boxDist(box, pos);
 
-        if (new_dst < dst) {
-            dst = new_dst;
-            clr = box.color;
+            if (new_dst < dst) {
+                dst = new_dst;
+                clr = box.color;
+            }
         }
+    } else if (renderMode == 1) {
+        dst = 0.0;
+
+        for (int i = 0; i < numOfSpheres; i++) {
+            Sphere sphere = spheres[i];
+
+            float new_dst = sphereDist(sphere, pos);
+
+            if (new_dst > dst) {
+                dst = new_dst;
+                clr = sphere.color;
+            }
+        }
+
+        for (int i = 0; i < numOfBoxes; i++) {
+            Box box = boxes[i];
+
+            float new_dst = boxDist(box, pos);
+
+            if (new_dst > dst) {
+                dst = new_dst;
+                clr = box.color;
+            }
+        }  
+    }
+
+    return vec4(dst, clr);
+}
+
+vec3 approxNorm(vec3 pos, float dst, Sphere spheres[MAX_SPHERES], Box boxes[MAX_BOXES]) {
+    float dx = dst - minDist(pos + vec3(0.0001, 0.0, 0.0), spheres, boxes).x;
+    float dy = dst - minDist(pos + vec3(0.0, 0.0001, 0.0), spheres, boxes).x;
+    float dz = dst - minDist(pos + vec3(0.0, 0.0, 0.0001), spheres, boxes).x;
+
+    return normalize(vec3(dx, dy, dz));
+}
+
+vec3 shade(vec3 clr, vec3 norm, vec3 pos) {
+    return clr * dot(getLightVec(pos), norm);
+}
+
+vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Box boxes[MAX_BOXES]) {
+    float dst = 1000000.0;
+    vec3 clr = vec3(0);
+    vec3 p;
+
+    while (dst > MIN_DIST) {
+        p = ray.pos; 
+
+        vec4 drgb = minDist(p, spheres, boxes);
+
+        dst = drgb.x;
+        clr = drgb.yzw;
 
         if (ray.pos.y < 0) {
             vec3 intersect = intersectXZPlane(ray);
@@ -168,7 +246,7 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES]) {
         depth -= 1;
     }
 
-    return clr;
+    return shade(clr, approxNorm(p, dst, spheres, boxes), p);;
 }
 
 // Quaternion Multiplication
@@ -192,14 +270,14 @@ vec3 rotateDir(vec3 ray_dir) {
     return res.yzw;
 }
 
-vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES]) {
+vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Box boxes[MAX_BOXES]) {
     vec3 dir = getDir(uv);
     dir = rotateDir(dir);
     dir = normalize(dir);
 
     Ray ray = Ray(origin, dir);
 
-    return _march(ray, MAX_DEPTH, spheres);
+    return _march(ray, MAX_DEPTH, spheres, boxes);
 }
 
 void main() {
@@ -211,20 +289,15 @@ void main() {
     
     vec3 origin = cameraPos;
 
-    // spheres array contains all spheres loaded in from the paddedSpheres UBO
     Sphere spheres [MAX_SPHERES];
     for (int i = 0; i < numOfSpheres; i++) {
         spheres[i] = getSphere(i);
     } 
 
-    // vec3 before = vec3(0.0, 0.0, 0.5);
-    // vec3 after = rotateDir(before);
+    Box boxes [MAX_BOXES];
+    for (int i = 0; i < numOfBoxes; i++) {
+        boxes[i] = getBox(i);
+    } 
 
-    // if (sqrt(before.x * before.x + before.y * before.y + before.z * before.z) - sqrt(after.x * after.x + after.y * after.y + after.z * after.z) > 0.0001) {
-    //     FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    // } else {
-    //     FragColor = vec4(abs(after), 1.0);
-    // }
-
-    FragColor = vec4(rayMarch(ray_dir, origin, spheres), 1.0);
+    FragColor = vec4(rayMarch(ray_dir, origin, spheres, boxes), 1.0);
 }
