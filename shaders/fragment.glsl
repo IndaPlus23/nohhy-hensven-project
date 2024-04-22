@@ -24,33 +24,16 @@ struct Sphere {
     float radius;
 };
 
-struct Triangle {
-    vec3 v1;
-    vec3 v2;
-    vec3 v3;
-    vec3 norm;
+struct Box {
+    vec3 pos;
+    vec3 dim;
     vec3 color;
 };
-
-Triangle newTriangle(vec3 a, vec3 b, vec3 c, vec3 clr) {
-    vec3 ba = b - a;
-    vec3 ac = a - c;
-    vec3 nor = normalize(cross( ba, ac ));
-    
-    return Triangle(a, b, c, nor, clr);
-}
 
 struct PaddedSphere {
     vec4 pos;
     vec4 color;
     vec4 radius;
-};
-
-struct PaddedTriangle {
-    vec4 v1;
-    vec4 v2;
-    vec4 v3;
-    vec4 color;
 };
 
 struct Ray {
@@ -63,13 +46,6 @@ layout(std430, binding = 10) buffer spheres_
 {
     PaddedSphere paddedSpheres[MAX_SPHERES];
 };
-
-/// SSBO 
-layout(std430, binding = 11) buffer triangles_
-{
-    PaddedTriangle paddedTriangles[MAX_TRIANGLES];
-};
-
 
 float dist3(vec3 pos1, vec3 pos2) {
     float dx = pos1.x - pos2.x;
@@ -85,41 +61,16 @@ Sphere getSphere(int index) {
     return Sphere(paddedSphere.pos.xyz, paddedSphere.color.xyz, paddedSphere.radius.x);
 }
 
-Triangle getTriangle(int index) {
-    PaddedTriangle paddedTriangle = paddedTriangles[index];
-
-    return newTriangle(paddedTriangle.v1.xyz, paddedTriangle.v2.xyz, paddedTriangle.v3.xyz, paddedTriangle.color.xyz);
-}
-
 float sphereDist(Sphere sphere, vec3 pos) {
     return dist3(sphere.pos, pos) - sphere.radius;
 }
 
-float dot2(vec3 v ) { return dot(v,v); }
-
 // from https://iquilezles.org/articles/distfunctions/
-float triangleDist(Triangle triangle, vec3 pos) {
-    vec3 a = triangle.v1;
-    vec3 b = triangle.v2;
-    vec3 c = triangle.v3;
-    vec3 p = pos;
-
-    vec3 ba = b - a; vec3 pa = p - a;
-    vec3 cb = c - b; vec3 pb = p - b;
-    vec3 ac = a - c; vec3 pc = p - c;
-    vec3 nor = triangle.norm;
-
-    return sqrt(
-    (sign(dot(cross(ba,nor),pa)) +
-        sign(dot(cross(cb,nor),pb)) +
-        sign(dot(cross(ac,nor),pc))<2.0)
-        ?
-        min( min(
-        dot2(ba*clamp(dot(ba,pa)/dot2(ba),0.0,1.0)-pa),
-        dot2(cb*clamp(dot(cb,pb)/dot2(cb),0.0,1.0)-pb) ),
-        dot2(ac*clamp(dot(ac,pc)/dot2(ac),0.0,1.0)-pc) )
-        :
-        dot(nor,pa)*dot(nor,pa)/dot2(nor) );
+float boxDist(Box box, vec3 pos)
+{
+    vec3 p = pos - box.pos;
+    vec3 q = abs(p) - box.dim;
+    return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
 vec3 getDir(vec2 uv) {
@@ -138,10 +89,6 @@ float getLightCoefSphere(Ray ray, Sphere sphere) {
     return dot(getLightVec(ray.pos), getSphereNormal(sphere, ray.pos));
 }
 
-float getLightCoefTriangle(Ray ray, Triangle triangle) {
-    return dot(getLightVec(ray.pos), triangle.norm);
-}
-
 vec3 intersectXZPlane(Ray ray) {
     // Check if the ray is parallel to the x-z plane
     if (abs(ray.dir.y) < 1e-6) {
@@ -158,13 +105,6 @@ float distToInt(float number) {
     return abs(number - nearest_int);
 }
 
-vec3 vecPow(vec3 v, int x) {
-    return vec3(
-        pow(v.x, x),
-        pow(v.y, x),
-        pow(v.z, x)
-    );
-}
 
 vec3 floorColor(float x, float z) {
     vec3 clr;
@@ -180,7 +120,7 @@ vec3 floorColor(float x, float z) {
     return clr;
 }
 
-vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
+vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES]) {
     float dst = 10000000.0;
     vec3 clr = vec3(0);
 
@@ -194,19 +134,24 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
                 dst = new_dst;
                 clr = sphere.color * getLightCoefSphere(ray, sphere);
             }
-
         }
 
-        // for (int j = 0; j < numOfTriangles; j++) {
-        //     Triangle triangle = triangles[j];
+        Box box = Box(vec3(1.0, 0.0, 0.0), vec3(1.0, 1.5, 0.3), vec3(0.8275, 0.3255, 0.502));
 
-        //     float new_dst = triangleDist(triangle, ray.pos);
+        float new_dst = boxDist(box, ray.pos);
 
-        //     if (new_dst < dst) {
-        //         dst = new_dst;
-        //         clr = triangle.color * getLightCoefTriangle(ray, triangle);
-        //     }
-        // }
+        if (new_dst < dst) {
+            dst = new_dst;
+            clr = box.color;
+        }
+
+        if (ray.pos.y < 0) {
+            vec3 intersect = intersectXZPlane(ray);
+
+            float density = 5.0;
+
+            return floorColor(density * intersect.x, density * intersect.z);
+        } 
         
         if (depth <= 0) {
             if (ray.dir.y < 0) {
@@ -247,14 +192,14 @@ vec3 rotateDir(vec3 ray_dir) {
     return res.yzw;
 }
 
-vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
+vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES]) {
     vec3 dir = getDir(uv);
     dir = rotateDir(dir);
     dir = normalize(dir);
 
     Ray ray = Ray(origin, dir);
 
-    return _march(ray, MAX_DEPTH, spheres, triangles);
+    return _march(ray, MAX_DEPTH, spheres);
 }
 
 void main() {
@@ -272,11 +217,6 @@ void main() {
         spheres[i] = getSphere(i);
     } 
 
-    Triangle triangles [MAX_TRIANGLES];
-    for (int i = 0; i < numOfTriangles; i++) {
-        triangles[i] = getTriangle(i);
-    } 
-
     // vec3 before = vec3(0.0, 0.0, 0.5);
     // vec3 after = rotateDir(before);
 
@@ -286,5 +226,5 @@ void main() {
     //     FragColor = vec4(abs(after), 1.0);
     // }
 
-    FragColor = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
+    FragColor = vec4(rayMarch(ray_dir, origin, spheres), 1.0);
 }
