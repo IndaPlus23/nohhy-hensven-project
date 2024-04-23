@@ -22,8 +22,8 @@ use camera::*;
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([1.0, 0.0, 1.5], [0.0, 0.0, 1.0], 0.7),
-        Sphere::new([0.0, 0.1, 1.5], [1.0, 0.0, 1.0], 0.4)
+        Sphere::new([0.0, 0.0, 0.5], [0.0, 0.0, 1.0], 0.7),
+        Sphere::new([0.0, 1.0, 1.5], [1.0, 0.0, 1.0], 0.4)
     ]
 }
 
@@ -103,7 +103,7 @@ fn main() {
         
         let mut redraw = |camera : &mut Camera| {
             
-            camera.rotate_around_obj(&[1.0, 1.0, 1.0], 0.01);
+            camera.rotate_around_obj(&[1.0, 1.0, 1.0], 0.001);
 
 
             if should_quit {
@@ -137,7 +137,7 @@ fn main() {
                 let u_resolution = [window.inner_size().width as f32, window.inner_size().height as f32];
                 let numOfSpheres = object_handeler.get_num_of_spheres() as i32;
                 let numOfTriangles = object_handeler.get_num_of_triangles() as i32;
-                let mut light_pos = [5.0f32, 5.0f32, -3.0f32];
+                let mut light_pos = [0.0f32, 0.0f32, -300.0f32];
 
                 // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
                 let matrix = [
@@ -194,7 +194,6 @@ fn main() {
                 let event_response = gui_handeler.get_responce(&window, &event);
             
 
-            
                 let dur = Instant::elapsed(&start);
                 let fps = 1.0 / dur.as_secs_f64();
                 println!("fps: {fps}");

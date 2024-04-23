@@ -261,13 +261,14 @@ vec3 floorColor(float x, float z) {
     return clr;
 }
 
-vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
+//vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
+vec3 _march(Ray ray, int depth) {
     float dst = 10000000.0;
     vec3 clr = vec3(0);
 
     while (dst > MIN_DIST) {
         for (int i = 0; i < numOfSpheres; i++) {
-            Sphere sphere = spheres[i];
+            Sphere sphere = getSphere(i);
 
             float new_dst = sphereDist(sphere, ray.pos);
 
@@ -275,7 +276,6 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
                 dst = new_dst;
                 clr = sphere.color * getLightCoefSphere(ray, sphere);
             }
-
         }
 
         // for (int j = 0; j < numOfTriangles; j++) {
@@ -303,6 +303,8 @@ vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[
         ray = Ray(ray.pos + ray.dir * dst, ray.dir);
         depth -= 1;
     }
+    
+    
 
     return clr;
 }
@@ -328,14 +330,14 @@ vec3 rotateDir(vec3 ray_dir) {
     return res.yzw;
 }
 
-vec3 rayMarch(vec2 uv, vec3 origin, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
+vec3 rayMarch(vec2 uv, vec3 origin) {
     vec3 dir = getDir(uv);
     dir = rotateDir(dir);
     dir = normalize(dir);
 
     Ray ray = Ray(origin, dir);
 
-    return _march(ray, MAX_DEPTH, spheres, triangles);
+    return _march(ray, MAX_DEPTH);
 }
 
 void main() {
@@ -348,6 +350,7 @@ void main() {
     vec3 origin = cameraPos;
 
     // spheres array contains all spheres loaded in from the paddedSpheres UBO
+    /*
     Sphere spheres [MAX_SPHERES];
     for (int i = 0; i < numOfSpheres; i++) {
         spheres[i] = getSphere(i);
@@ -356,7 +359,7 @@ void main() {
     Triangle triangles [MAX_TRIANGLES];
     for (int i = 0; i < numOfTriangles; i++) {
         triangles[i] = getTriangle(i);
-    } 
+    } */
 
     // vec3 before = vec3(0.0, 0.0, 0.5);
     // vec3 after = rotateDir(before);
@@ -367,5 +370,6 @@ void main() {
     //     f_color = vec4(abs(after), 1.0);
     // }
 
-    f_color = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
+    //f_color = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
+    f_color = vec4(rayMarch(ray_dir, origin), 1.0);
 }

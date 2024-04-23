@@ -48,14 +48,20 @@ impl GuiHandeler{
                     spheres.iter_mut().for_each(|sphere|{
                         ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
                             ui_inside_inside.label("Radius");
-                            if ui_inside_inside.add(egui::widgets::Slider::new(&mut sphere.radius, RangeInclusive::new(0f32, 100f32))).enabled(){
+                            if ui_inside_inside.add(egui::widgets::Slider::new(&mut sphere.radius, RangeInclusive::new(0.0f32, 3.0f32)).min_decimals(2)).enabled(){
                                 *should_update_objects = true;
-                                println!("Hola");
                             };
                             ui_inside_inside.label("Color");
                             if egui::color_picker::color_edit_button_rgb(ui_inside_inside, &mut sphere.color).enabled(){
                                 *should_update_objects = true;
                             };
+                            ui_inside_inside.label("Position X");
+                            ui_inside_inside.add(egui::Slider::new(&mut sphere.pos[0], 0.0..=5.0).min_decimals(1));
+                            ui_inside_inside.label("Position Y");
+                            ui_inside_inside.add(egui::Slider::new(&mut sphere.pos[1], 0.0..=5.0).min_decimals(1));
+                            ui_inside_inside.label("Position Z");
+                            ui_inside_inside.add(egui::Slider::new(&mut sphere.pos[2], 0.0..=5.0).min_decimals(1));
+                            //response.on_hover_text("Drag me!");
         
                         });
                         id_counter += 1;
