@@ -2,7 +2,7 @@
 
 use egui::{Align, RichText, Ui, ViewportId};
 use glium::{backend::{glutin::SimpleWindowBuilder, Facade}, glutin::{api::egl::display, surface::WindowSurface}, implement_buffer_content, implement_uniform_block, implement_vertex, index::PrimitiveType, program, uniform, GlObject, Surface};
-use shapes::Sphere;
+use shapes::{Cube, Sphere};
 use winit::{
     event,
     event_loop::{EventLoop, EventLoopBuilder},
@@ -22,8 +22,7 @@ use camera::*;
 
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([0.0, 0.0, 0.5], [0.0, 0.0, 1.0], 0.7),
-        Sphere::new([0.0, 1.0, 1.5], [1.0, 0.0, 1.0], 0.4)
+        Sphere::new([0.0, 1.0, 0.0], [0.8078, 0.1647, 0.3569], 0.7)
     ]
 }
 
@@ -39,8 +38,10 @@ fn main() {
     // Setup scene
     let mut spheres = init_spheres();
     let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
+    let mut cubes : Vec<Cube> = vec![Cube::new([0.0, 1.0, 0.0], [0.3, 1.5, 0.2], [0.8078, 0.1647, 0.3569])];
     object_handeler.add_spheres_from(spheres);
     object_handeler.add_triangles_from(triangles);
+    object_handeler.add_cubes_from(cubes);
     //object_handeler.add__from(spheres);
 
     
@@ -88,6 +89,7 @@ fn main() {
     // load sphere and triangle uniform buffer
     let mut sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
     let mut triangle_array = object_handeler.get_uniform_buffer_triangles(&display);
+    let mut cube_array = object_handeler.get_uniform_buffer_cubes(&display);
 
     // create camera 
     let mut camera = Camera::new();
@@ -137,7 +139,11 @@ fn main() {
                 let u_resolution = [window.inner_size().width as f32, window.inner_size().height as f32];
                 let numOfSpheres = object_handeler.get_num_of_spheres() as i32;
                 let numOfTriangles = object_handeler.get_num_of_triangles() as i32;
+                let numOfBoxes = object_handeler.get_num_of_cubes() as i32;
                 let mut light_pos = [0.0f32, 0.0f32, -300.0f32];
+
+                let renderMode = 2 as i32;
+                let smoothness = 0.2 as f32;
 
                 // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
                 let matrix = [
@@ -160,12 +166,16 @@ fn main() {
                         u_resolution : u_resolution, 
                         numOfSpheres : numOfSpheres, 
                         numOfTriangles : numOfTriangles, 
-                        sphere_array : &*sphere_array, 
+                        numOfBoxes : numOfBoxes,
+                        renderMode : renderMode,
+                        smoothness : smoothness,
                         lightPos : light_pos,
                         cameraPos : camera.pos,
                         cameraRotationQuaternion : camera.get_rotation_quaternion(), 
                         cameraFOV : camera.fov,
-                        triangle_array : &*triangle_array
+                        sphere_array : &*sphere_array, 
+                        triangle_array : &*triangle_array,
+                        cube_array : &*cube_array
                     }, 
                     &Default::default()
                 ).unwrap();

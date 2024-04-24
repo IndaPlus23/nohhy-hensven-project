@@ -3,7 +3,7 @@
 
 use glium::{glutin::surface::WindowSurface, implement_uniform_block};
 
-use crate::shapes::{Sphere, Triangle};
+use crate::shapes::{Sphere, Triangle, Cube};
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -25,6 +25,14 @@ pub struct TriangleArray {
     color_triangles: [[f32; 4]; 128],
 }
 
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CubesArray { 
+    pos_cubes: [[f32; 4]; 128],   
+    dim_cubes: [[f32; 4]; 128], 
+    color_cubes: [[f32; 4]; 128],
+}
+
 pub struct ObjectHandeler{
 
     // ssbo for gpu storage
@@ -34,6 +42,7 @@ pub struct ObjectHandeler{
     // for cpu storage
     cpu_triangles : Vec<Triangle>,
     cpu_spheres : Vec<Sphere>,
+    cpu_cubes : Vec<Cube>,
 
     // other stuff
     data_is_modified : bool,
@@ -47,6 +56,7 @@ impl ObjectHandeler{
             //ssbo_spheres : Ssbo::new(10),
             cpu_triangles : Vec::new(),
             cpu_spheres : Vec::new(),
+            cpu_cubes : Vec::new(),
             data_is_modified : false
         };
         handeler.initiate(); // initiate sphere and triangle struct for glinum
@@ -58,10 +68,12 @@ impl ObjectHandeler{
         // this is something that glium needs, so that we can pass these resources as uniforms
         implement_uniform_block!(SphereArray, number_of_objects, positions, colors, radius);
         implement_uniform_block!(TriangleArray, v1, v2, v3, norm, color_triangles);
+        implement_uniform_block!(CubesArray, pos_cubes, dim_cubes, color_cubes);
     }
 
     pub fn get_num_of_triangles(&self) -> usize{self.cpu_triangles.len()}
     pub fn get_num_of_spheres(&self) -> usize{self.cpu_spheres.len()}
+    pub fn get_num_of_cubes(&self) -> usize{self.cpu_cubes.len()}
 
     pub fn get_spheres_reference(&mut self) -> &mut Vec<Sphere>{
         &mut self.cpu_spheres
@@ -84,6 +96,11 @@ impl ObjectHandeler{
         self.data_is_modified = true;
     }
 
+    pub fn add_cube(&mut self, render_object : Cube){
+        self.cpu_cubes.push(render_object);
+        self.data_is_modified = true;
+    }
+
     pub fn add_triangles_from(&mut self, mut render_objects : Vec<Triangle>){
         self.cpu_triangles.append(&mut render_objects);
         self.data_is_modified = true;
@@ -93,6 +110,11 @@ impl ObjectHandeler{
         self.cpu_spheres.append(&mut render_objects);
         self.data_is_modified = true;
         println!("{:?}", self.cpu_spheres);
+    }
+
+    pub fn add_cubes_from(&mut self, mut render_objects : Vec<Cube>){
+        self.cpu_cubes.append(&mut render_objects);
+        self.data_is_modified = true;
     }
 
     // TODO: remove()
@@ -174,8 +196,35 @@ impl ObjectHandeler{
             });
             
         }
-        
         return triangle_array;
+    }
+
+    // temp solution until I get ssbo to work with glinum
+    pub fn get_uniform_buffer_cubes(&mut self, display : &glium::Display<WindowSurface>) -> glium::uniforms::UniformBuffer<CubesArray>{
+        
+        let mut cube_array: glium::uniforms::UniformBuffer<CubesArray> = glium::uniforms::UniformBuffer::empty(display).unwrap();
+
+        {
+            let mut mapping = cube_array.map();
+            let mut counter : usize = 0;
+            self.cpu_cubes.iter_mut().for_each(|cube|{
+                let mut pos = [0.0f32; 4];
+                pos[..3].copy_from_slice(&cube.pos);
+                mapping.pos_cubes[counter] = pos;
+
+                let mut dim = [0.0f32; 4];
+                dim[..3].copy_from_slice(&cube.dim);
+                mapping.dim_cubes[counter] = dim;
+
+                let mut color = [0.0f32; 4];
+                color[..3].copy_from_slice(&cube.color);
+                mapping.color_cubes[counter] = color;
+
+                counter += 1;
+            });
+            
+        }
+        return cube_array;
     }
 
 }

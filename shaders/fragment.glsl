@@ -11,7 +11,13 @@ const int MAX_DEPTH = 100;
 
 uniform int numOfSpheres;
 uniform int numOfTriangles;
+uniform int numOfBoxes;
 uniform vec3 lightPos;
+
+// 0 : Normal
+// 1 : Intersect
+uniform int renderMode;
+uniform float smoothness;
 
 uniform vec3 cameraPos;
 uniform vec4 cameraRotationQuaternion;
@@ -47,6 +53,12 @@ layout(std140) buffer triangle_array {
     vec4 color_triangles[128];
 };
 
+layout(std140) buffer cube_array {
+    vec4 pos_cubes[128];
+    vec4 dim_cubes[128];
+    vec4 color_cubes[128];
+};
+
 
 /*
 layout(std140) buffer sphere_array {
@@ -78,6 +90,12 @@ struct Triangle {
     vec3 v2;
     vec3 v3;
     vec3 norm;
+    vec3 color;
+};
+
+struct Cube {
+    vec3 pos;
+    vec3 dim;
     vec3 color;
 };
 
@@ -164,6 +182,14 @@ Triangle getTriangle(int index) {
     return t;
 }
 
+Cube getCube(int index) {
+    Cube c; 
+    c.pos = vec3(pos_cubes[index].x, pos_cubes[index].y, pos_cubes[index].z);
+    c.color = vec3(color_cubes[index].x, color_cubes[index].y, color_cubes[index].z);
+
+    return c;
+}
+
 /*
 Triangle getTriangle(int index) {
     PaddedTriangle paddedTriangle = paddedTriangles[index];
@@ -171,6 +197,13 @@ Triangle getTriangle(int index) {
     return newTriangle(paddedTriangle.v1.xyz, paddedTriangle.v2.xyz, paddedTriangle.v3.xyz, paddedTriangle.color.xyz);
 }
 */
+
+
+// from https://www.youtube.com/watch?v=Cp5WWtMoeKg
+float smoothMin(float dstA, float dstB, float k) {
+    float h = max(k - abs(dstA - dstB), 0.0) / k;
+    return min(dstA, dstB) - h*h*h*k/6.0;
+}
 
 float sphereDist(Sphere sphere, vec3 pos) {
     return dist3(sphere.pos, pos) - sphere.radius;
@@ -201,6 +234,15 @@ float triangleDist(Triangle triangle, vec3 pos) {
         dot2(ac*clamp(dot(ac,pc)/dot2(ac),0.0,1.0)-pc) )
         :
         dot(nor,pa)*dot(nor,pa)/dot2(nor) );
+}
+
+
+// from https://iquilezles.org/articles/distfunctions/
+float cubeDist(Cube box, vec3 pos)
+{
+    vec3 p = pos - box.pos;
+    vec3 q = abs(p) - box.dim;
+    return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
 }
 
 vec3 getDir(vec2 uv) {
@@ -261,6 +303,142 @@ vec3 floorColor(float x, float z) {
     return clr;
 }
 
+
+
+vec4 minDist(vec3 pos) {
+    vec3 clr;
+    float dst;
+
+    if (renderMode == 0) {
+        dst = 10000000.0;
+
+        for (int i = 0; i < numOfSpheres; i++) {
+            Sphere sphere = getSphere(i);
+            float new_dst = sphereDist(sphere, pos);
+
+            if (new_dst < dst) {
+                dst = new_dst;
+                clr = sphere.color;
+            }
+        }
+
+        for (int i = 0; i < numOfBoxes; i++) {
+            Cube box = getCube(i);
+
+            float new_dst = cubeDist(box, pos);
+
+            if (new_dst < dst) {
+                dst = new_dst;
+                clr = box.color;
+            }
+        }
+    } else if (renderMode == 1) {
+        dst = 0.0;
+
+        for (int i = 0; i < numOfSpheres; i++) {
+            Sphere sphere = getSphere(i);
+
+            float new_dst = sphereDist(sphere, pos);
+
+            if (new_dst > dst) {
+                dst = new_dst;
+                clr = sphere.color;
+            }
+        }
+
+        for (int i = 0; i < numOfBoxes; i++) {
+            Cube box = getCube(i);
+            float new_dst = cubeDist(box, pos);
+
+            if (new_dst > dst) {
+                dst = new_dst;
+                clr = box.color;
+            }
+        }  
+    } else if (renderMode == 2) {
+        dst = 10000000.0;
+
+        for (int i = 0; i < numOfSpheres; i++) {
+            Sphere sphere = getSphere(i);
+
+            float new_dst = sphereDist(sphere, pos);
+            float s_dst = smoothMin(dst, new_dst, smoothness);
+
+            if (s_dst < dst) {
+                dst = s_dst;
+                clr = sphere.color;
+            }
+        }
+
+        for (int i = 0; i < numOfBoxes; i++) {
+            Cube box = getCube(i);
+
+            float new_dst = cubeDist(box, pos);
+            float s_dst = smoothMin(dst, new_dst, smoothness);
+
+            if (s_dst < dst) {
+                dst = s_dst;
+                clr = box.color;
+            }
+        }  
+    }
+
+    return vec4(dst, clr);
+}
+
+vec3 approxNorm(vec3 pos, float dst) {
+    float dx = dst - minDist(pos + vec3(0.0001, 0.0, 0.0)).x;
+    float dy = dst - minDist(pos + vec3(0.0, 0.0001, 0.0)).x;
+    float dz = dst - minDist(pos + vec3(0.0, 0.0, 0.0001)).x;
+
+    return normalize(vec3(dx, dy, dz));
+}
+
+vec3 shade(vec3 clr, vec3 norm, vec3 pos) {
+    return clr * dot(getLightVec(pos), norm);
+}
+
+
+vec3 _march(Ray ray, int depth) {
+    float dst = 1000000.0;
+    vec3 clr = vec3(0);
+    vec3 p;
+
+    while (dst > MIN_DIST) {
+        p = ray.pos; 
+
+        vec4 drgb = minDist(p);
+
+        dst = drgb.x;
+        clr = drgb.yzw;
+
+        if (ray.pos.y < 0) {
+            vec3 intersect = intersectXZPlane(ray);
+
+            float density = 5.0;
+
+            return floorColor(density * intersect.x, density * intersect.z);
+        } 
+        
+        if (depth <= 0) {
+            if (ray.dir.y < 0) {
+                vec3 intersect = intersectXZPlane(ray);
+
+                float density = 5.0;
+
+                return floorColor(density * intersect.x, density * intersect.z);
+            } 
+            return vec3(0.5);
+        }
+
+        ray = Ray(ray.pos + ray.dir * dst, ray.dir);
+        depth -= 1;
+    }
+
+    return shade(clr, approxNorm(p, dst), p);;
+}
+
+/*
 //vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
 vec3 _march(Ray ray, int depth) {
     float dst = 10000000.0;
@@ -275,6 +453,18 @@ vec3 _march(Ray ray, int depth) {
             if (new_dst < dst) {
                 dst = new_dst;
                 clr = sphere.color * getLightCoefSphere(ray, sphere);
+            }
+        }
+
+
+        for (int i = 0; i < numOfBoxes; i++) {
+            Cube box = getCube(i);
+
+            float new_dst = cubeDist(box, ray.pos);
+
+            if (new_dst < dst) {
+                dst = new_dst;
+                clr = box.color;
             }
         }
 
@@ -308,6 +498,7 @@ vec3 _march(Ray ray, int depth) {
 
     return clr;
 }
+*/
 
 // Quaternion Multiplication
 vec4 qMul(vec4 r, vec4 s) {
