@@ -39,10 +39,10 @@ fn main() {
     let mut spheres = init_spheres();
     let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
     let mut cubes : Vec<Cube> = vec![Cube::new([0.0, 1.0, 0.0], [0.3, 1.5, 0.2], [0.8078, 0.1647, 0.3569])];
-    object_handeler.add_spheres_from(spheres);
+    //object_handeler.add_spheres_from(spheres);
     object_handeler.add_triangles_from(triangles);
     object_handeler.add_cubes_from(cubes);
-    //object_handeler.add__from(spheres);
+    object_handeler.add_spheres_from(spheres);
 
     
     // building the vertex buffer, which contains all the vertices that we will draw
@@ -143,7 +143,7 @@ fn main() {
                 let mut light_pos = [0.0f32, 0.0f32, -300.0f32];
 
                 let renderMode = 2 as i32;
-                let smoothness = 0.2 as f32;
+                let smoothness = 0.3 as f32;
 
                 // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
                 let matrix = [

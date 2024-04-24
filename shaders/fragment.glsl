@@ -185,6 +185,7 @@ Triangle getTriangle(int index) {
 Cube getCube(int index) {
     Cube c; 
     c.pos = vec3(pos_cubes[index].x, pos_cubes[index].y, pos_cubes[index].z);
+    c.dim = vec3(dim_cubes[index].x, dim_cubes[index].y, dim_cubes[index].z);
     c.color = vec3(color_cubes[index].x, color_cubes[index].y, color_cubes[index].z);
 
     return c;
@@ -358,6 +359,7 @@ vec4 minDist(vec3 pos) {
     } else if (renderMode == 2) {
         dst = 10000000.0;
 
+        
         for (int i = 0; i < numOfSpheres; i++) {
             Sphere sphere = getSphere(i);
 
@@ -369,6 +371,7 @@ vec4 minDist(vec3 pos) {
                 clr = sphere.color;
             }
         }
+        
 
         for (int i = 0; i < numOfBoxes; i++) {
             Cube box = getCube(i);
@@ -539,6 +542,7 @@ void main() {
     vec2 ray_dir = uv;
     
     vec3 origin = cameraPos;
+
 
     // spheres array contains all spheres loaded in from the paddedSpheres UBO
     /*
