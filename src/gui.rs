@@ -6,10 +6,12 @@ use glium::glutin::surface::WindowSurface;
 use glutin::{event::{Event, WindowEvent}, event_loop::EventLoopWindowTarget};
 use winit::window::Window;
 
-use crate::{objectHandeler, ObjectHandeler};
+use crate::{object_handeler, Camera, ObjectHandeler};
+use crate::mouse_handler::MouseHandler;
 
 pub struct GuiHandeler{
-    egui_glium : EguiGlium
+    egui_glium : EguiGlium,
+    mouse_handler : MouseHandler
 }
 
 impl GuiHandeler{
@@ -18,6 +20,7 @@ impl GuiHandeler{
         
         GuiHandeler{
             egui_glium : egui_glium_src,
+            mouse_handler : MouseHandler::new()
         }
     }
 
@@ -30,20 +33,19 @@ impl GuiHandeler{
     }
 
 
-    pub fn update_gui(&mut self, window : &Window, should_quit : &mut bool, mut objectHandeler : &mut ObjectHandeler, mut should_update_objects : &mut bool){
+    pub fn update_gui(&mut self, window : &Window, should_quit : &mut bool, mut object_handeler : &mut ObjectHandeler, mut should_update_objects : &mut bool, camera : &mut Camera){
 
         *should_update_objects = false;
 
         self.egui_glium.run(&window, |egui_ctx| {
-            
-
             //self.collapsing_objects_tree(egui_ctx, &mut objectHandeler);
+            self.mouse_handler.move_camera(egui_ctx, camera, 0.00003);
             
             egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
                 
                 // Temporary: This should really be inside a functions for simplicty - but the borrow checker goes mad with two mutable borrow with self
                 ui.collapsing("Spheres", |ui_inside| { 
-                    let spheres = objectHandeler.get_spheres_reference();
+                    let spheres = object_handeler.get_spheres_reference();
                     let mut id_counter = 0;
                     spheres.iter_mut().for_each(|sphere|{
                         ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
