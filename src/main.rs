@@ -20,9 +20,12 @@ use crate::shapes::Triangle;
 use camera::*;
 
 
+
+
 fn init_spheres() -> Vec<Sphere> {
     vec![
-        Sphere::new([0.0, 1.0, 0.0], [0.8078, 0.1647, 0.3569], 0.7)
+        Sphere::new([0.0, 1.0, 0.0], [0.0078, 0.1647, 0.3569], 0.7),
+        Sphere::new([1.0, 0.0, 0.0], [1.0, 0.1647, 0.5], 0.7)
     ]
 }
 
@@ -32,13 +35,13 @@ fn main() {
     let (window, display) = create_display(&event_loop);
 
     // setup gui and objects
-    let mut gui_handeler = gui::GuiHandeler::new(egui_glium::EguiGlium::new(ViewportId::ROOT, &display, &window, &event_loop));
+    let mut gui_handeler = gui::gui::GuiHandeler::new(egui_glium::EguiGlium::new(ViewportId::ROOT, &display, &window, &event_loop));
     let mut object_handeler = objectHandeler::ObjectHandeler::new();
 
     // Setup scene
     let mut spheres = init_spheres();
     let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
-    let mut cubes : Vec<Cube> = vec![Cube::new([0.0, 1.0, 0.0], [0.3, 1.5, 0.2], [0.8078, 0.1647, 0.3569])];
+    let mut cubes : Vec<Cube> = vec![Cube::new([0.0, 0.0, 0.0], [0.4, 2.0, 0.4], [0.8078, 0.1647, 0.3569])];
     //object_handeler.add_spheres_from(spheres);
     object_handeler.add_triangles_from(triangles);
     object_handeler.add_cubes_from(cubes);
@@ -105,7 +108,7 @@ fn main() {
         
         let mut redraw = |camera : &mut Camera| {
             
-            camera.rotate_around_obj(&[1.0, 1.0, 1.0], 0.001);
+            camera.rotate_around_obj(&[1.0, 2.0, 1.0], 0.001/2.0);
 
 
             if should_quit {
@@ -118,6 +121,7 @@ fn main() {
             if should_update_objects {
                 sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
                 triangle_array = object_handeler.get_uniform_buffer_triangles(&display);
+                cube_array = object_handeler.get_uniform_buffer_cubes(&display);
             }
 
             if should_quit {
@@ -140,10 +144,10 @@ fn main() {
                 let numOfSpheres = object_handeler.get_num_of_spheres() as i32;
                 let numOfTriangles = object_handeler.get_num_of_triangles() as i32;
                 let numOfBoxes = object_handeler.get_num_of_cubes() as i32;
-                let mut light_pos = [0.0f32, 0.0f32, -300.0f32];
+                let mut light_pos = [300.0f32, 100.0f32, 50.0f32];
 
                 let renderMode = 2 as i32;
-                let smoothness = 0.3 as f32;
+                let smoothness = 0.9 as f32;
 
                 // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
                 let matrix = [
