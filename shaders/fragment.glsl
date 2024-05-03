@@ -304,6 +304,7 @@ vec3 floorColor(float x, float z) {
     return clr;
 }
 
+
 vec2 calculateColorBlending(float dist2, float dist1){
 
     float coeff = dist1 / dist2;
@@ -312,6 +313,26 @@ vec2 calculateColorBlending(float dist2, float dist1){
     float c2 = -c1 + 2;
 
     return vec2(c1, c2);
+}
+
+/*
+vec2 calculateColorBlending(float dist2, float dist1, vec3 colA, vec3 colB){
+
+    float coeff = dist1 / dist2;
+
+    float c1 = 2/(coeff + 1);
+    float c2 = -c1 + 2;
+
+    return vec2(c1, c2);
+}
+*/
+
+vec4 Blend(float a, float b, vec3 colA, vec3 colB, float k )
+{
+    float h = clamp( 0.5+0.5*(b-a)/k, 0.0, 1.0 );
+    float blendDst = (a-b) * h + b - k*h*(1.0-h);
+    vec3 blendCol = (colA-colB) * h + colB;
+    return vec4(blendCol, blendDst);
 }
 
 
@@ -386,7 +407,7 @@ vec4 minDist(vec3 pos) {
             float new_dst = cubeDist(box, pos);
             float s_dst = smoothMin(dst, new_dst, smoothness);
 
-            if (s_dst < dst && new_dst < not_smooth_dist_1) {
+            
                 
                 //clr = box.color;
                 //clr =
@@ -398,8 +419,8 @@ vec4 minDist(vec3 pos) {
                 //float diff_dist_factor = not_smooth_dist_1 / new_dst;
                 vec2 color_coeffs = calculateColorBlending(not_smooth_dist_1, new_dst);
                 //clr = color_coeffs.x * box.color + color_coeffs.y * color_other_object;
-
-                clr = color_coeffs.x * box.color + color_coeffs.y * color_other_object;
+                clr = Blend(not_smooth_dist_1, new_dst, clr, box.color, 0.5).xyz;
+                not_smooth_dist_1 = Blend(not_smooth_dist_1, new_dst, color_other_object, box.color, 0.5).w;
 
 
 
@@ -417,11 +438,14 @@ vec4 minDist(vec3 pos) {
 
                 //clr = box.color * (new_dst / diff_dist) + color_other_object * (not_smooth_dist_1 / diff_dist);
 
-
-                not_smooth_dist_1 = new_dst;
+            if (s_dst < dst) {
+                //not_smooth_dist_1 = new_dst;
                 dst = s_dst;
-                color_other_object = box.color;
+                //color_other_object = box.color;
             }
+            //not_smooth_dist_1 = new_dst;
+            //color_other_object = box.color;
+            dst = s_dst;
         }  
 
         
@@ -431,14 +455,16 @@ vec4 minDist(vec3 pos) {
             float new_dst = sphereDist(sphere, pos);
             float s_dst = smoothMin(dst, new_dst, smoothness);
 
-            if (s_dst < dst) {
+            
                 // create smooth color
 
                 //float diff_dist = not_smooth_dist_1 - new_dst;
                 //float diff_dist_factor = not_smooth_dist_1 / new_dst;
                 vec2 color_coeffs = calculateColorBlending(not_smooth_dist_1, new_dst);
 
-                clr = color_coeffs.x * sphere.color + color_coeffs.y * color_other_object;
+                //clr = color_coeffs.x * sphere.color + color_coeffs.y * color_other_object;
+                clr = Blend(not_smooth_dist_1, new_dst, clr, sphere.color, 0.5).xyz;
+                not_smooth_dist_1 = Blend(not_smooth_dist_1, new_dst, color_other_object, sphere.color, 0.5).w;
 
                 /*
                 if(diff_dist_factor > 0.7 && diff_dist_factor < 1.3){
@@ -452,9 +478,9 @@ vec4 minDist(vec3 pos) {
 
 
                 //clr = sphere.color * (new_dst / diff_dist) + color_other_object * (not_smooth_dist_1 / diff_dist);
+                //if (s_dst < dst) {
 
-
-                not_smooth_dist_1 = new_dst;
+                //not_smooth_dist_1 = new_dst;
                 dst = s_dst;
                 color_other_object = sphere.color;
 
@@ -465,7 +491,10 @@ vec4 minDist(vec3 pos) {
 
 
 
-            }
+            //}
+
+            //not_smooth_dist_1 = new_dst;
+            color_other_object = sphere.color;
         }
         
 

@@ -85,7 +85,8 @@ impl GuiHandeler<'_>{
             let spheres = objectHandeler.get_spheres_reference();
             let mut id_counter = 0;
 
-            for i in 0..spheres.len() {
+            for mut i in 0..spheres.len() {
+                let mut break_ = false;
                 ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
 
                     {
@@ -109,9 +110,12 @@ impl GuiHandeler<'_>{
                     
                     if ui_inside_inside.button("Remove").clicked(){
                         spheres.remove(i); // thus remove this sphere object
+                        break_ = true;
                     }
                     //response.on_hover_text("Drag me!");
                 });
+
+                if break_{break;}
                 id_counter += 1;
 
             }
