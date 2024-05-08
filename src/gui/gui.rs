@@ -112,14 +112,12 @@ impl GuiHandeler<'_>{
                         spheres.remove(i); // thus remove this sphere object
                         break_ = true;
                     }
-                    //response.on_hover_text("Drag me!");
                 });
 
                 if break_{break;}
                 id_counter += 1;
 
             }
-
             
         });
 
@@ -155,14 +153,48 @@ impl GuiHandeler<'_>{
                     if ui_inside_inside.button("Remove").clicked(){
                         cubes.remove(i); // thus remove this sphere object
                     }
-                    //response.on_hover_text("Drag me!");
                 });
                 id_counter += 1;
 
             }
-
-            
         });
+
+        /* 
+        ui.collapsing("Groups", |ui_inside| { 
+
+            ui_inside.collapsing("Group 1", |ui_inside_inside|{
+
+                ui_inside_inside.label("Relations");
+                ui_inside_inside.collapsing("Relation 1", |ui_inside_inside_inside|{
+                    ui_inside_inside_inside.label("Type: Union");
+                    if ui_inside_inside_inside.button("Tweak relation").clicked(){
+            
+                    }
+                });
+
+                ui_inside_inside.collapsing("Relation 2", |ui_inside_inside_inside|{
+                    ui_inside_inside_inside.label("Type: Intersection");
+                    if ui_inside_inside_inside.button("Tweak relation").clicked(){
+            
+                    }
+                });
+
+                ui_inside_inside.separator();
+                ui_inside_inside.label("Objects");
+
+
+            });
+
+            ui_inside.collapsing("Group 2", |ui_inside_inside|{
+
+            });
+
+        });
+
+        if ui.button("Create group").clicked(){
+            
+        }
+        */
     }
 
 }

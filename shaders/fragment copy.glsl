@@ -365,8 +365,6 @@ vec4 minDist(vec3 pos) {
             }
         }
     } else if (renderMode == 1) {
-
-        // some tests for boolean operators
         dst = 0.0;
 
         Sphere sphere = getSphere(0);
@@ -418,14 +416,44 @@ vec4 minDist(vec3 pos) {
             float new_dst = cubeDist(box, pos);
             float s_dst = smoothMin(dst, new_dst, smoothness);
 
-            // for color blending
-            vec2 color_coeffs = calculateColorBlending(previous_shortest_non_smooth_dist, new_dst);
-            clr = Blend(previous_shortest_non_smooth_dist, new_dst, clr, box.color, 0.5).xyz;
-            previous_shortest_non_smooth_dist = Blend(previous_shortest_non_smooth_dist, new_dst, color_previous_shortest_object, box.color, 0.5).w;
+            
+                
+                //clr = box.color;
+                //clr =
+                //float diff_dist = previous_shortest_non_smooth_dist - new_dst;
+                //float tot_dist = previous_shortest_non_smooth_dist + new_dst;
+
+
+
+                //float diff_dist_factor = previous_shortest_non_smooth_dist / new_dst;
+                vec2 color_coeffs = calculateColorBlending(previous_shortest_non_smooth_dist, new_dst);
+                //clr = color_coeffs.x * box.color + color_coeffs.y * color_previous_shortest_object;
+                clr = Blend(previous_shortest_non_smooth_dist, new_dst, clr, box.color, 0.5).xyz;
+                previous_shortest_non_smooth_dist = Blend(previous_shortest_non_smooth_dist, new_dst, color_previous_shortest_object, box.color, 0.5).w;
+
+
+
+                /*
+
+                if(diff_dist_factor > 0.7 && diff_dist_factor < 1.3){
+                    clr =  (box.color + color_previous_shortest_object) / 2.0;
+                } else if(diff_dist_factor > 1.3){
+                    clr = box.color;
+                } else {
+                    clr = color_previous_shortest_object;
+                }
+                */
+
+
+                //clr = box.color * (new_dst / diff_dist) + color_previous_shortest_object * (previous_shortest_non_smooth_dist / diff_dist);
 
             if (s_dst < dst) {
+                //previous_shortest_non_smooth_dist = new_dst;
                 dst = s_dst;
+                //color_previous_shortest_object = box.color;
             }
+            //previous_shortest_non_smooth_dist = new_dst;
+            //color_previous_shortest_object = box.color;
             dst = s_dst;
         }  
 
@@ -436,16 +464,50 @@ vec4 minDist(vec3 pos) {
             float new_dst = sphereDist(sphere, pos);
             float s_dst = smoothMin(dst, new_dst, smoothness);
 
-            // for color blending
-            vec2 color_coeffs = calculateColorBlending(previous_shortest_non_smooth_dist, new_dst);
-            clr = Blend(previous_shortest_non_smooth_dist, new_dst, clr, sphere.color, 0.5).xyz;
-            previous_shortest_non_smooth_dist = Blend(previous_shortest_non_smooth_dist, new_dst, color_previous_shortest_object, sphere.color, 0.5).w;
+            
+                // create smooth color
 
-            dst = s_dst;
-            color_previous_shortest_object = sphere.color;
+                //float diff_dist = previous_shortest_non_smooth_dist - new_dst;
+                //float diff_dist_factor = previous_shortest_non_smooth_dist / new_dst;
+                vec2 color_coeffs = calculateColorBlending(previous_shortest_non_smooth_dist, new_dst);
 
+                //clr = color_coeffs.x * sphere.color + color_coeffs.y * color_previous_shortest_object;
+                clr = Blend(previous_shortest_non_smooth_dist, new_dst, clr, sphere.color, 0.5).xyz;
+                previous_shortest_non_smooth_dist = Blend(previous_shortest_non_smooth_dist, new_dst, color_previous_shortest_object, sphere.color, 0.5).w;
+
+                /*
+                if(diff_dist_factor > 0.7 && diff_dist_factor < 1.3){
+                    clr =  (sphere.color + color_previous_shortest_object) / 2.0;
+                } else if(diff_dist_factor > 1.3){
+                    clr = sphere.color;
+                } else {
+                    clr = color_previous_shortest_object;
+                }
+                */
+
+
+                //clr = sphere.color * (new_dst / diff_dist) + color_previous_shortest_object * (previous_shortest_non_smooth_dist / diff_dist);
+                //if (s_dst < dst) {
+
+                //previous_shortest_non_smooth_dist = new_dst;
+                dst = s_dst;
+                color_previous_shortest_object = sphere.color;
+
+                //dst = s_dst;
+                //clr = sphere.color;
+
+                
+
+
+
+            //}
+
+            //previous_shortest_non_smooth_dist = new_dst;
             color_previous_shortest_object = sphere.color;
-        }    
+        }
+        
+
+        
     }
 
     return vec4(dst, clr);
