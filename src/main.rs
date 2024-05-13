@@ -104,9 +104,6 @@ fn main() {
 
         
         let mut redraw = |camera : &mut Camera| {
-            
-            camera.rotate_around_obj(&[1.0, 1.0, 1.0], 0.001);
-
 
             if should_quit {
                 target.exit() // exit program/window
