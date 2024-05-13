@@ -79,12 +79,22 @@ impl ObjectHandeler{
         &mut self.cpu_spheres
     }
 
+    pub fn get_cubes_reference(&mut self) -> &mut Vec<Cube>{
+        &mut self.cpu_cubes
+    }
+
     /*
     fn add_render_object<T : ToGl>(&mut self, render_object : T){
 
     }
     */
 
+    pub fn remove_sphere(&mut self, render_object : Sphere){
+        let pos = self.cpu_spheres.iter().position(|object|{object == &render_object});
+        if let Some(pos_unwrapped) = pos{
+            self.cpu_spheres.remove(pos_unwrapped);
+        }
+    }
 
     pub fn add_triangle(&mut self, render_object : Triangle){
         self.cpu_triangles.push(render_object);

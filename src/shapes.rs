@@ -1,5 +1,5 @@
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Sphere {
     pub pos : [f32;3],
     pub color : [f32;3],

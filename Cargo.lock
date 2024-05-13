@@ -545,6 +545,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "egui-snarl"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "793c8084fad16c68f893f899934d650fca177d5fc827b0d11ca17d6201a243af"
+dependencies = [
+ "egui",
+ "slab",
+ "tiny-fn",
+]
+
+[[package]]
 name = "egui-winit"
 version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1703,6 +1714,7 @@ name = "ray-marching-opengl"
 version = "0.1.0"
 dependencies = [
  "egui",
+ "egui-snarl",
  "egui_glium",
  "gl",
  "glium",
@@ -2012,6 +2024,12 @@ checksum = "8576dbbfcaef9641452d5cf0df9b0e7eeab7694956dd33bb61515fb8f18cfdd5"
 dependencies = [
  "thread-id",
 ]
+
+[[package]]
+name = "tiny-fn"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "219331d5e8cc8377a282141509c21457a8b87937230fa4b8152d8857bfee2942"
 
 [[package]]
 name = "tiny-skia"
