@@ -35,6 +35,22 @@ pub fn vec_add(x : [f32;3], y : [f32;3], k : f32) -> [f32; 3] {
     ]
 }
 
+pub fn vec2_add(x : [f32;2], y : [f32;2], k : f32) -> [f32; 2] {
+    [
+        x[0] + k * y[0],
+        x[1] + k * y[1]
+    ]
+}
+
+
+
+pub fn vec_mul(v : [f32;2], k : f32) -> [f32;2] {
+    [
+        v[0] * k,
+        v[1] * k
+    ]
+}
+
 pub fn normalize(v : [f32; 3]) -> [f32; 3] {
     let norm = f32::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 
@@ -51,4 +67,11 @@ pub fn cross_product(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
         a[2] * b[0] - a[0] * b[2],
         a[0] * b[1] - a[1] * b[0],
     ]
+}
+
+pub fn rotate_vec2(v : [f32; 2], angle : f32) -> [f32; 2] {
+    let new_x = v[0] * angle.cos() - v[1] * angle.sin();
+    let new_y = v[0] * angle.sin() + v[1] * angle.cos();
+
+    [new_x, new_y]
 }

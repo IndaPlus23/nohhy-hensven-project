@@ -39,7 +39,7 @@ impl GuiHandeler{
 
         self.egui_glium.run(&window, |egui_ctx| {
             //self.collapsing_objects_tree(egui_ctx, &mut objectHandeler);
-            self.mouse_handler.move_camera(egui_ctx, camera, 0.00003);
+            self.mouse_handler.handle(egui_ctx, camera);
             
             egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
                 
