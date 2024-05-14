@@ -9,7 +9,8 @@ use glium::glutin::{api::egl::display, surface::WindowSurface};
 use glutin::{event::{Event, WindowEvent}, event_loop::EventLoopWindowTarget};
 use winit::window::Window;
 
-use crate::{objectHandeler, shapes::Sphere, ObjectHandeler, specificGuiFunctionality::*};
+use crate::{object_handler, shapes::Sphere, specificGuiFunctionality::*, Camera, ObjectHandeler};
+use crate::mouse_handler::MouseHandler;
 
 use egui_snarl::{ui::{SnarlStyle, SnarlViewer}, *};
 struct StateHandeler{
@@ -29,7 +30,8 @@ impl StateHandeler{
 pub struct GuiHandeler<'a>{
     egui_glium : EguiGlium,
     state_handeler : StateHandeler,
-    create_object_gui : CreateRenderObjectGui<'a>
+    create_object_gui : CreateRenderObjectGui<'a>,
+    mouse_handler : MouseHandler
 }
 
 impl GuiHandeler<'_>{
@@ -39,7 +41,8 @@ impl GuiHandeler<'_>{
         GuiHandeler{
             egui_glium : egui_glium_src,
             state_handeler : StateHandeler::new(),
-            create_object_gui: CreateRenderObjectGui::new()
+            create_object_gui: CreateRenderObjectGui::new(),
+            mouse_handler : MouseHandler::new()
         }
     }
 
@@ -51,11 +54,13 @@ impl GuiHandeler<'_>{
         return self.egui_glium.on_event(&window, &event);
     }
 
-    pub fn update_gui(&mut self, window : &Window, should_quit : &mut bool, mut objectHandeler : &mut ObjectHandeler, mut should_update_objects : &mut bool){
+    pub fn update_gui(&mut self, window : &Window, should_quit : &mut bool, mut objectHandeler : &mut ObjectHandeler, mut should_update_objects : &mut bool, camera : &mut Camera){
 
         *should_update_objects = false;
 
         self.egui_glium.run(&window, |egui_ctx| {
+
+            self.mouse_handler.handle(egui_ctx, camera);
             
             egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
 

@@ -9,13 +9,15 @@ use winit::{
 };
 use std::{fs, ops::RangeInclusive, time::Instant};
 
+mod vec_util;
 mod gui;
-mod objectHandeler;
+mod object_handler;
+mod mouse_handler;
 mod shapes;
 mod camera;
 
 use gui::*;
-use objectHandeler::*;
+use object_handler::*;
 use crate::shapes::Triangle;
 use camera::*;
 
@@ -36,7 +38,7 @@ fn main() {
 
     // setup gui and objects
     let mut gui_handeler = gui::gui::GuiHandeler::new(egui_glium::EguiGlium::new(ViewportId::ROOT, &display, &window, &event_loop));
-    let mut object_handeler = objectHandeler::ObjectHandeler::new();
+    let mut object_handeler = object_handler::ObjectHandeler::new();
 
     // Setup scene
     let mut spheres = init_spheres();
@@ -97,7 +99,7 @@ fn main() {
     // create camera 
     let mut camera = Camera::new();
     camera.pos = [0.0, 1.0, -3.0];
-    camera.set_rotation_axis(&[0.0, 1.0, 0.0]);
+    camera.set_rotation_axis([0.0, 1.0, 0.0]);
 
     let mut should_quit = false;
     let mut should_update_objects = false;
@@ -107,17 +109,12 @@ fn main() {
 
         
         let mut redraw = |camera : &mut Camera| {
-            
-            camera.rotate_around_obj(&[1.0, 2.0, 1.0], 0.001/2.0);
-
-
-
             if should_quit {
                 target.exit() // exit program/window
             }
 
             // change gui
-            gui_handeler.update_gui(&window, &mut should_quit, &mut object_handeler, &mut should_update_objects);
+            gui_handeler.update_gui(&window, &mut should_quit, &mut object_handeler, &mut should_update_objects, camera);
 
             if should_update_objects {
                 sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
@@ -211,8 +208,6 @@ fn main() {
 
                 let dur = Instant::elapsed(&start);
                 let fps = 1.0 / dur.as_secs_f64();
-                println!("fps: {fps}");
-
 
                 if event_response.repaint {
                     window.request_redraw();
