@@ -1,3 +1,2 @@
-
 pub mod gui;
-pub mod specificGuiFunctionality;
+pub mod specific_gui_functionality;

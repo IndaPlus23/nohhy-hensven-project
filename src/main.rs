@@ -1,13 +1,13 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release // from demo
 
-use egui::{Align, RichText, Ui, ViewportId};
-use glium::{backend::{glutin::SimpleWindowBuilder, Facade}, glutin::{api::egl::display, surface::WindowSurface}, implement_buffer_content, implement_uniform_block, implement_vertex, index::PrimitiveType, program, uniform, GlObject, Surface};
+use egui::ViewportId;
+use glium::{backend::glutin::SimpleWindowBuilder, glutin::surface::WindowSurface, implement_vertex, uniform};
 use shapes::{Cube, Sphere};
 use winit::{
     event,
     event_loop::{EventLoop, EventLoopBuilder},
 };
-use std::{fs, ops::RangeInclusive, time::Instant};
+use std::{fs, time::Instant};
 
 mod vec_util;
 mod gui;
@@ -41,10 +41,9 @@ fn main() {
     let mut object_handeler = object_handler::ObjectHandeler::new();
 
     // Setup scene
-    let mut spheres = init_spheres();
-    let mut triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
-    let mut cubes : Vec<Cube> = vec![Cube::new([0.0, 0.0, 0.0], [0.4, 2.0, 0.4], [0.8078, 0.1647, 0.3569])];
-    //object_handeler.add_spheres_from(spheres);
+    let spheres = init_spheres();
+    let triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
+    let cubes : Vec<Cube> = vec![Cube::new([0.0, 0.0, 0.0], [0.4, 2.0, 0.4], [0.8078, 0.1647, 0.3569])];
     object_handeler.add_triangles_from(triangles);
     object_handeler.add_cubes_from(cubes);
     object_handeler.add_spheres_from(spheres);
@@ -89,7 +88,6 @@ fn main() {
     // In this case we use a closure for simplicity, however keep in mind that most serious
     // applications should probably use a function that takes the resources as an argument.
     let _ptr = program.get_frag_data_location("f_color").unwrap(); // will be zero; internal glium location for f_color that is "out" for fragment shader
-    //program.get_shader_storage_blocks().get_key_value(k);
 
     // load sphere and triangle uniform buffer
     let mut sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
@@ -114,7 +112,7 @@ fn main() {
             }
 
             // change gui
-            gui_handeler.update_gui(&window, &mut should_quit, &mut object_handeler, &mut should_update_objects, camera);
+            gui_handeler.update_gui(&window, &mut object_handeler, &mut should_update_objects, camera);
 
             if should_update_objects {
                 sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
@@ -132,19 +130,14 @@ fn main() {
 
                 let color = egui::Rgba::from_rgb(0.0, 0.0, 0.0);
                 target.clear_color(color[0], color[1], color[2], color[3]);
-                let data_ = [0.5, 0.4f32];
 
-                // load spheres uniform buffer
-                //let sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
-                 // load other uniforms
-                //let u_resolution = [1500.0f32, 800.0f32]
                 let u_resolution = [window.inner_size().width as f32, window.inner_size().height as f32];
-                let numOfSpheres = object_handeler.get_num_of_spheres() as i32;
-                let numOfTriangles = object_handeler.get_num_of_triangles() as i32;
-                let numOfBoxes = object_handeler.get_num_of_cubes() as i32;
-                let mut light_pos = [300.0f32, 100.0f32, 50.0f32];
+                let num_of_spheres = object_handeler.get_num_of_spheres() as i32;
+                let num_of_triangles = object_handeler.get_num_of_triangles() as i32;
+                let num_of_boxes = object_handeler.get_num_of_cubes() as i32;
+                let light_pos = [300.0f32, 100.0f32, 50.0f32];
 
-                let renderMode = 2 as i32;
+                let render_mode = 2 as i32;
                 let smoothness = 0.9 as f32;
 
                 // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
@@ -159,17 +152,16 @@ fn main() {
                     &vertex_buffer, 
                     &index_buffer, 
                     &program, 
-                    //&uniform! {sphere_array: &*sphere_array, u_resolution : u_resolution, numOfSpheres : numOfSpheres, numOfTriangles : numOfTriangles}, 
-                    //&uniform! {sphere_array: &*sphere_array}, 
+
                     // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
                     &uniform! {
                         // Format: name of uniform (in glsl) | resource/data
                         matrix : matrix, 
                         u_resolution : u_resolution, 
-                        numOfSpheres : numOfSpheres, 
-                        numOfTriangles : numOfTriangles, 
-                        numOfBoxes : numOfBoxes,
-                        renderMode : renderMode,
+                        numOfSpheres : num_of_spheres, 
+                        numOfTriangles : num_of_triangles, 
+                        numOfBoxes : num_of_boxes,
+                        renderMode : render_mode,
                         smoothness : smoothness,
                         lightPos : light_pos,
                         cameraPos : camera.pos,
@@ -202,12 +194,11 @@ fn main() {
                     _ => {}
                 }
 
-                //let event_response = egui_glium.on_event(&window, &event);
                 let event_response = gui_handeler.get_responce(&window, &event);
             
 
                 let dur = Instant::elapsed(&start);
-                let fps = 1.0 / dur.as_secs_f64();
+                let _fps = 1.0 / dur.as_secs_f64();
 
                 if event_response.repaint {
                     window.request_redraw();

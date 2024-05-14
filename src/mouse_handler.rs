@@ -3,22 +3,20 @@ use crate::camera::Camera;
 use crate::vec_util::*;
 
 pub struct MouseHandler {
-    rotation_pos : [f32;3],
-    update_axis : bool
+    rotation_pos : [f32;3]
 }
 
 impl MouseHandler {
     pub fn new() -> Self {
         MouseHandler {
-            rotation_pos : [0., 1., 0.],
-            update_axis : true
+            rotation_pos : [0., 1., 0.]
         }
     }
 
     pub fn handle(&mut self, ctx : &egui::Context, camera : &mut Camera) {
-        self.rotate_camera(ctx, camera, 0.00005);
-        self.move_camera(ctx, camera, 0.0001);
-        self.zoom(ctx, camera, 0.01);
+        self.rotate_camera(ctx, camera, 0.00009);
+        self.move_camera(ctx, camera, 0.00015);
+        self.zoom(ctx, camera, 0.05);
     }
 
     fn zoom(&mut self, ctx : &egui::Context, camera : &mut Camera, sensitivity : f32) {

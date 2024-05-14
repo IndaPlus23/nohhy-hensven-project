@@ -36,12 +36,6 @@ struct Sphere {
 
 layout(std140) buffer sphere_array {
     float number_of_objects;
-    /*
-    vec4 positions[4096/4];
-    vec4 colors[4096/4];
-    float radius[128];
-    */
-
     vec4 positions[128];
     vec4 colors[128];
     vec4 radius[128];
@@ -61,13 +55,6 @@ layout(std140) buffer cube_array {
     vec4 color_cubes[128];
 };
 
-
-/*
-layout(std140) buffer sphere_array {
-    float number_of_objects;
-    Sphere sphere1[10];
-};*/
-
 Sphere getSphereFromIndex(int id){
     Sphere s; 
     s.radius = radius[id].x;
@@ -75,17 +62,6 @@ Sphere getSphereFromIndex(int id){
     s.color = vec3(colors[id].x, colors[id].y, colors[id].z);
     return s;
 }
-
-/*
-void main() {
-    //f_color = vec4(vColor, 1.0);
-    //f_color = vec4(data[0], data[1], data[2], 1.0);
-    //f_color = vec4(data_.x, data_.x, data_.x, 1.0);
-    //f_color = values[0];
-    //f_color = vec4(pos, 1.0);
-    f_color = colors[0];
-}
-*/
 
 struct Triangle {
     vec3 v1;
@@ -128,19 +104,6 @@ struct Ray {
     vec3 pos;
     vec3 dir;
 };
-
-/*
-uniform SphereBuffer {
-    PaddedSphere paddedSpheres[MAX_SPHERES];
-};
-
-
-
-uniform TriangleBuffer {
-    PaddedTriangle paddedTriangles[MAX_TRIANGLES];
-};
-
-*/
 
 // from old demo code, 
 /// SSBO 
@@ -192,15 +155,6 @@ Cube getCube(int index) {
 
     return c;
 }
-
-/*
-Triangle getTriangle(int index) {
-    PaddedTriangle paddedTriangle = paddedTriangles[index];
-
-    return newTriangle(paddedTriangle.v1.xyz, paddedTriangle.v2.xyz, paddedTriangle.v3.xyz, paddedTriangle.color.xyz);
-}
-*/
-
 
 // from https://www.youtube.com/watch?v=Cp5WWtMoeKg
 float smoothMin(float dstA, float dstB, float k) {
@@ -321,18 +275,6 @@ vec2 calculateColorBlending(float dist2, float dist1){
     return vec2(c1, c2);
 }
 
-/*
-vec2 calculateColorBlending(float dist2, float dist1, vec3 colA, vec3 colB){
-
-    float coeff = dist1 / dist2;
-
-    float c1 = 2/(coeff + 1);
-    float c2 = -c1 + 2;
-
-    return vec2(c1, c2);
-}
-*/
-
 vec4 Blend(float a, float b, vec3 colA, vec3 colB, float k )
 {
     float h = clamp( 0.5+0.5*(b-a)/k, 0.0, 1.0 );
@@ -379,39 +321,10 @@ vec4 minDist(vec3 pos) {
         Cube box = getCube(0);
         {
             dst = max(-sphereDist(sphere, pos), cubeDist(box, pos));
-
-
-            //Sphere sphere1 = getSphere(1);
-
-
             dst = max(dst, sphereDist(getSphere(1), pos));
 
         }
-        //dst = max(-sphereDist(sphere, pos), cubeDist(box, pos));
         clr = box.color;
-
-    /*
-        for (int i = 0; i < numOfSpheres; i++) {
-            Sphere sphere = getSphere(i);
-
-            float new_dst = sphereDist(sphere, pos);
-
-            if (new_dst > dst) {
-                dst = new_dst;
-                clr = sphere.color;
-            }
-        }
-
-        for (int i = 0; i < numOfBoxes; i++) {
-            Cube box = getCube(i);
-            float new_dst = cubeDist(box, pos);
-
-            if (new_dst > dst) {
-                dst = new_dst;
-                clr = box.color;
-            }
-        }  
-        */
     } else if (renderMode == 2) {
         dst = 10000000.0;
         
@@ -514,68 +427,6 @@ vec3 _march(Ray ray, int depth) {
     return shade(clr, approxNorm(p, dst), p);
 }
 
-/*
-//vec3 _march(Ray ray, int depth, Sphere spheres[MAX_SPHERES], Triangle triangles[MAX_TRIANGLES]) {
-vec3 _march(Ray ray, int depth) {
-    float dst = 10000000.0;
-    vec3 clr = vec3(0);
-
-    while (dst > MIN_DIST) {
-        for (int i = 0; i < numOfSpheres; i++) {
-            Sphere sphere = getSphere(i);
-
-            float new_dst = sphereDist(sphere, ray.pos);
-
-            if (new_dst < dst) {
-                dst = new_dst;
-                clr = sphere.color * getLightCoefSphere(ray, sphere);
-            }
-        }
-
-
-        for (int i = 0; i < numOfBoxes; i++) {
-            Cube box = getCube(i);
-
-            float new_dst = cubeDist(box, ray.pos);
-
-            if (new_dst < dst) {
-                dst = new_dst;
-                clr = box.color;
-            }
-        }
-
-        // for (int j = 0; j < numOfTriangles; j++) {
-        //     Triangle triangle = triangles[j];
-
-        //     float new_dst = triangleDist(triangle, ray.pos);
-
-        //     if (new_dst < dst) {
-        //         dst = new_dst;
-        //         clr = triangle.color * getLightCoefTriangle(ray, triangle);
-        //     }
-        // }
-        
-        if (depth <= 0) {
-            if (ray.dir.y < 0) {
-                vec3 intersect = intersectXZPlane(ray);
-
-                float density = 5.0;
-
-                return floorColor(density * intersect.x, density * intersect.z);
-            } 
-            return vec3(0.5);
-        }
-
-        ray = Ray(ray.pos + ray.dir * dst, ray.dir);
-        depth -= 1;
-    }
-    
-    
-
-    return clr;
-}
-*/
-
 // Quaternion Multiplication
 vec4 qMul(vec4 r, vec4 s) {
     float x = r.x * s.x - r.y * s.y - r.z * s.z - r.w * s.w;
@@ -611,33 +462,9 @@ void main() {
     // Screen coordinates normalized to [-1, 1]
     vec2 uv = 2.0 * gl_FragCoord.xy / u_resolution.xy - 1.0;
 
-    // TODO: transform ray_dir depending on camera position
     vec2 ray_dir = uv;
     
     vec3 origin = cameraPos;
 
-
-    // spheres array contains all spheres loaded in from the paddedSpheres UBO
-    /*
-    Sphere spheres [MAX_SPHERES];
-    for (int i = 0; i < numOfSpheres; i++) {
-        spheres[i] = getSphere(i);
-    } 
-
-    Triangle triangles [MAX_TRIANGLES];
-    for (int i = 0; i < numOfTriangles; i++) {
-        triangles[i] = getTriangle(i);
-    } */
-
-    // vec3 before = vec3(0.0, 0.0, 0.5);
-    // vec3 after = rotateDir(before);
-
-    // if (sqrt(before.x * before.x + before.y * before.y + before.z * before.z) - sqrt(after.x * after.x + after.y * after.y + after.z * after.z) > 0.0001) {
-    //     f_color = vec4(1.0, 0.0, 0.0, 1.0);
-    // } else {
-    //     f_color = vec4(abs(after), 1.0);
-    // }
-
-    //f_color = vec4(rayMarch(ray_dir, origin, spheres, triangles), 1.0);
     f_color = vec4(rayMarch(ray_dir, origin), 1.0);
 }

@@ -1,22 +1,14 @@
-
-
-
 use std::ops::RangeInclusive;
-
-use egui::{popup, ComboBox, Context, Ui};
+use egui::Ui;
 use egui_glium::*;
-use glium::glutin::{api::egl::display, surface::WindowSurface};
-use glutin::{event::{Event, WindowEvent}, event_loop::EventLoopWindowTarget};
+use glium::glutin::surface::WindowSurface;
 use winit::window::Window;
 
-use crate::{object_handler, shapes::Sphere, specificGuiFunctionality::*, Camera, ObjectHandeler};
+use crate::{specific_gui_functionality::*, Camera, ObjectHandeler};
 use crate::mouse_handler::MouseHandler;
 
-use egui_snarl::{ui::{SnarlStyle, SnarlViewer}, *};
 struct StateHandeler{
-
     pub create_object : bool,
-    /*...... */
 }
 
 impl StateHandeler{
@@ -54,7 +46,7 @@ impl GuiHandeler<'_>{
         return self.egui_glium.on_event(&window, &event);
     }
 
-    pub fn update_gui(&mut self, window : &Window, should_quit : &mut bool, mut objectHandeler : &mut ObjectHandeler, mut should_update_objects : &mut bool, camera : &mut Camera){
+    pub fn update_gui(&mut self, window : &Window, object_handeler : &mut ObjectHandeler, should_update_objects : &mut bool, camera : &mut Camera){
 
         *should_update_objects = false;
 
@@ -65,32 +57,27 @@ impl GuiHandeler<'_>{
             egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
 
                 // objects present in scene
-                Self::collapsing_objects_tree(objectHandeler, should_update_objects, ui);
+                Self::collapsing_objects_tree(object_handeler, should_update_objects, ui);
 
                 // Adding space
                 ui.add_space(15.0);
                 ui.separator();
 
                 // gui to create object
-                self.create_object_gui.show(&mut self.state_handeler.create_object, ui, objectHandeler, should_update_objects);
+                self.create_object_gui.show(&mut self.state_handeler.create_object, ui, object_handeler, should_update_objects);
 
             });
-            egui::TopBottomPanel::bottom("myawdwad_side_panel").show(egui_ctx, |ui| {
-                ui.heading("Hello Worldawdwd!");
-
-            });
-            
         });
     }
 
 
-    fn collapsing_objects_tree(objectHandeler : &mut ObjectHandeler, mut should_update_objects : &mut bool, ui : &mut Ui){
+    fn collapsing_objects_tree(object_handeler : &mut ObjectHandeler, should_update_objects : &mut bool, ui : &mut Ui){
 
         ui.collapsing("Spheres", |ui_inside| { 
-            let spheres = objectHandeler.get_spheres_reference();
+            let spheres = object_handeler.get_spheres_reference();
             let mut id_counter = 0;
 
-            for mut i in 0..spheres.len() {
+            for i in 0..spheres.len() {
                 let mut break_ = false;
                 ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
 
@@ -127,7 +114,7 @@ impl GuiHandeler<'_>{
         });
 
         ui.collapsing("Cubes", |ui_inside| { 
-            let cubes = objectHandeler.get_cubes_reference();
+            let cubes = object_handeler.get_cubes_reference();
             let mut id_counter = 0;
 
             for i in 0..cubes.len() {
@@ -163,43 +150,6 @@ impl GuiHandeler<'_>{
 
             }
         });
-
-        /* 
-        ui.collapsing("Groups", |ui_inside| { 
-
-            ui_inside.collapsing("Group 1", |ui_inside_inside|{
-
-                ui_inside_inside.label("Relations");
-                ui_inside_inside.collapsing("Relation 1", |ui_inside_inside_inside|{
-                    ui_inside_inside_inside.label("Type: Union");
-                    if ui_inside_inside_inside.button("Tweak relation").clicked(){
-            
-                    }
-                });
-
-                ui_inside_inside.collapsing("Relation 2", |ui_inside_inside_inside|{
-                    ui_inside_inside_inside.label("Type: Intersection");
-                    if ui_inside_inside_inside.button("Tweak relation").clicked(){
-            
-                    }
-                });
-
-                ui_inside_inside.separator();
-                ui_inside_inside.label("Objects");
-
-
-            });
-
-            ui_inside.collapsing("Group 2", |ui_inside_inside|{
-
-            });
-
-        });
-
-        if ui.button("Create group").clicked(){
-            
-        }
-        */
     }
 
 }

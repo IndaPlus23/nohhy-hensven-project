@@ -1,8 +1,5 @@
 use egui::Ui;
-
 use crate::{shapes::{Cube, Sphere}, ObjectHandeler};
-
-
 
 pub struct CreateRenderObjectGui<'a>{
     sphere : Sphere, 
@@ -22,14 +19,8 @@ impl CreateRenderObjectGui<'_>{
         }   
     }
 
-    fn create_new_shell_objects(&mut self){
-        self.sphere = Sphere::new([0.0; 3], [0.5; 3], 1.0);
-        self.cube = Cube::new([0.0; 3], [1.0; 3], [0.5; 3]);
-    }
+    pub fn show(&mut self, create_object_gui_active : &mut bool, ui : &mut Ui, object_handeler : &mut ObjectHandeler, should_update_objects : &mut bool){
 
-    pub fn show(&mut self, create_object_gui_active : &mut bool, ui : &mut Ui, object_handeler : &mut ObjectHandeler, mut should_update_objects : &mut bool){
-
-        let items = vec!["Sphere", "Cube"];
         let mut str = String::from("3.0");
         match create_object_gui_active{
             true => {

@@ -1,8 +1,5 @@
 use crate::vec_util::{normalize, get_rotation_quaternion, vec_add, rotate_pos};
 
-const MAX_FOV : f32 = 1000.0;
-const MIN_FOV : f32 = 0.05;
-
 pub struct Camera {
     pub pos : [f32; 3],
     pub rotation_axis : [f32; 3],

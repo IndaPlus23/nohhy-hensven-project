@@ -61,14 +61,6 @@ pub fn normalize(v : [f32; 3]) -> [f32; 3] {
     ]
 }
 
-pub fn cross_product(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
-    [
-        a[1] * b[2] - a[2] * b[1],
-        a[2] * b[0] - a[0] * b[2],
-        a[0] * b[1] - a[1] * b[0],
-    ]
-}
-
 pub fn rotate_vec2(v : [f32; 2], angle : f32) -> [f32; 2] {
     let new_x = v[0] * angle.cos() - v[1] * angle.sin();
     let new_y = v[0] * angle.sin() + v[1] * angle.cos();
