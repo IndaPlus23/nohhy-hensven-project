@@ -9,6 +9,8 @@ const int MAX_TRIANGLES = 100;
 const float MIN_DIST = 0.001;
 const int MAX_DEPTH = 100;
 
+const vec3 BG_CLR = vec3(0.6, 0.6, 0.6);
+
 uniform int numOfSpheres;
 uniform int numOfTriangles;
 uniform int numOfBoxes;
@@ -290,6 +292,10 @@ vec3 vecPow(vec3 v, int x) {
     );
 }
 
+float sigmoid(float x, float k) {
+    return 1.0 / (1 + exp(-k*x));
+}
+
 vec3 floorColor(float x, float z) {
     vec3 clr;
 
@@ -299,7 +305,7 @@ vec3 floorColor(float x, float z) {
         clr = vec3(0.6);
     }
 
-    clr = 2.0 * clr / dist3(cameraPos, vec3(x, 0, z));
+    clr = mix(clr, BG_CLR, sigmoid(dist3(vec3(0.0, 0.0, 0.0), vec3(x, 0, z)), 0.05));
 
     return clr;
 }
@@ -460,7 +466,12 @@ vec3 approxNorm(vec3 pos, float dst) {
 }
 
 vec3 shade(vec3 clr, vec3 norm, vec3 pos) {
-    return clr * dot(getLightVec(pos), norm);
+    vec3 lightDir = normalize(getLightVec(pos));
+
+    vec3 c1 = clr * (1.0 + dot(lightDir, norm)) / 2.0;
+    vec3 c2 = clr *  max(dot(lightDir, norm), 0.0);
+
+    return mix(c1, c2, 0.0);
 }
 
 
@@ -493,14 +504,14 @@ vec3 _march(Ray ray, int depth) {
 
                 return floorColor(density * intersect.x, density * intersect.z);
             } 
-            return vec3(0.5);
+            return BG_CLR;
         }
 
         ray = Ray(ray.pos + ray.dir * dst, ray.dir);
         depth -= 1;
     }
 
-    return shade(clr, approxNorm(p, dst), p);;
+    return shade(clr, approxNorm(p, dst), p);
 }
 
 /*
