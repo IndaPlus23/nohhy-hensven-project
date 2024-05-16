@@ -64,6 +64,10 @@ git
 
 Keep it simple since we are only two people on the team. 
 
+### Flowchart
+
+![flowchart](images/flowchart.png)
+
 ### Work Distribution
 
 Since the scope of project is narrow, it is difficult to generalize the distribution of work. Instead, tasks will be divided as they appear. This allows for improved flexibility in the sense that whichever person has more experience with a specific subject may choose to work on that part of the project. 

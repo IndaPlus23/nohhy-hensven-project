@@ -12,6 +12,8 @@ Project specifications can be found [here](SPEC.md)
 
 The program can be compiled and ran using `cargo run` in the project directory.
 
+**Note:** Make sure OpenGL 430 or newer is supported on your machine before running the program. 
+
 ## Authors
 
 [NatanHy](https://github.com/NatanHy)
