@@ -118,6 +118,7 @@ impl GuiHandeler<'_>{
             let mut id_counter = 0;
 
             for i in 0..cubes.len() {
+                let mut break_ = false;
                 ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
 
                     {
@@ -144,8 +145,49 @@ impl GuiHandeler<'_>{
                     
                     if ui_inside_inside.button("Remove").clicked(){
                         cubes.remove(i); // thus remove this sphere object
+                        break_ = true;
                     }
                 });
+
+                if break_{break;}
+                id_counter += 1;
+
+            }
+        });
+
+        
+        ui.collapsing("Menger sponges", |ui_inside| { 
+            let menger_sponges = object_handeler.get_menger_sponges_reference();
+            let mut id_counter = 0;
+
+            for i in 0..menger_sponges.len() {
+                let mut break_ = false;
+                ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
+
+                    {
+                        let menger_sponge = menger_sponges.get_mut(i).unwrap();
+                        ui_inside_inside.label("Color");
+                        if egui::color_picker::color_edit_button_rgb(ui_inside_inside, &mut menger_sponge.color).enabled(){
+                            *should_update_objects = true;
+                        };
+                        ui_inside_inside.label("Position X");
+                        ui_inside_inside.add(egui::Slider::new(&mut menger_sponge.pos[0], -5.0..=5.0).min_decimals(1));
+                        ui_inside_inside.label("Position Y");
+                        ui_inside_inside.add(egui::Slider::new(&mut menger_sponge.pos[1], -5.0..=5.0).min_decimals(1));
+                        ui_inside_inside.label("Position Z");
+                        ui_inside_inside.add(egui::Slider::new(&mut menger_sponge.pos[2], -5.0..=5.0).min_decimals(1));
+
+                        ui_inside_inside.label("Iterations");
+                        ui_inside_inside.add(egui::Slider::new(&mut menger_sponge.iterations, 1.0..=100.0));
+
+                    }
+                    
+                    if ui_inside_inside.button("Remove").clicked(){
+                        menger_sponges.remove(i); // thus remove this sphere object
+                        break_ = true;
+                    }
+                });
+                if break_{break;}
                 id_counter += 1;
 
             }

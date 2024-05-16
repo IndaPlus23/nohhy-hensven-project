@@ -13,6 +13,7 @@ const vec3 BG_CLR = vec3(0.6196, 0.6118, 0.6549);
 uniform int numOfSpheres;
 uniform int numOfTriangles;
 uniform int numOfBoxes;
+uniform int numOfMengerSponges;
 uniform vec3 lightPos;
 
 // 0 : Normal
@@ -55,6 +56,12 @@ layout(std140) buffer cube_array {
     vec4 color_cubes[128];
 };
 
+layout(std140) buffer menger_sponge_array {
+    vec4 pos_menger_sponges[128];
+    vec4 iterations_menger_sponges[128];
+    vec4 color_menger_sponges[128];
+};
+
 Sphere getSphereFromIndex(int id){
     Sphere s; 
     s.radius = radius[id].x;
@@ -74,6 +81,12 @@ struct Triangle {
 struct Cube {
     vec3 pos;
     vec3 dim;
+    vec3 color;
+};
+
+struct MengerSponge {
+    vec3 pos;
+    float iterations;
     vec3 color;
 };
 
@@ -154,6 +167,15 @@ Cube getCube(int index) {
     c.color = vec3(color_cubes[index].x, color_cubes[index].y, color_cubes[index].z);
 
     return c;
+}
+
+MengerSponge getMengerSponge(int index) {
+    MengerSponge m;
+    m.pos = vec3(pos_menger_sponges[index].x, pos_menger_sponges[index].y, pos_menger_sponges[index].z);
+    m.iterations = iterations_menger_sponges[index].x;
+    m.color = vec3(color_menger_sponges[index].x, color_menger_sponges[index].y, color_menger_sponges[index].z);
+
+    return m;
 }
 
 // from https://www.youtube.com/watch?v=Cp5WWtMoeKg
@@ -284,6 +306,81 @@ vec4 Blend(float a, float b, vec3 colA, vec3 colB, float k )
 }
 
 
+float cross(vec3 pos, float side_length, vec3 offset){
+
+    float inf = 100000;
+    float dist_a = cubeDist(Cube(offset, vec3(inf, side_length, side_length), vec3(1.0)), pos);
+    float dist_b = cubeDist(Cube(offset, vec3(side_length, inf, side_length), vec3(1.0)), pos);
+    float dist_c = cubeDist(Cube(offset, vec3(side_length, side_length, inf), vec3(1.0)), pos);
+
+    return min(dist_a, min(dist_b, dist_c));
+}
+
+
+
+
+float mengel_fractal_iteration_1(vec3 pos){
+    float distBoundingBox = cubeDist(Cube(vec3(-0.0, -0.0, -0.0), vec3(1.0), vec3(1.0)), pos);
+
+    float cross_dist = cross(pos, 1.0/3.0, vec3(0.0));
+
+    float subtraction = max(distBoundingBox, -cross_dist);
+    return subtraction;
+}
+
+
+float mengerSponge2(vec3 pos){
+
+    pos = pos - vec3(0.0, 1.0, 0.0);
+    float distBoundingBox = cubeDist(Cube(vec3(-0.0, -0.0, -0.0), vec3(1.0), vec3(1.0)), pos / 1) * 1;// spans [-1, 1]
+
+    float cubeWidth = 2.0;
+    float boxedWorldDimen = cubeWidth / 3.0;
+
+    float translation = -boxedWorldDimen / 2.0;
+    vec3 ray = pos - translation;
+
+    vec3 repeatedPos = mod(ray, boxedWorldDimen);
+    repeatedPos += translation;
+    repeatedPos *= 3.0;
+    //float dist = cubeDist(Cube(vec3(0.0, 0.0, 0.0), vec3(1.0), vec3(1.0)), repeatedPos / 0.9) * 0.9;
+    float dist = cross(repeatedPos*3.0, 1.0, vec3(0.0)) / 3.0;
+    dist /= 3.0;
+    float sub = max(mengel_fractal_iteration_1(pos), -dist);
+    return sub;
+}
+
+//https://iquilezles.org/articles/menger/
+float sdMengerSponge(vec3 rayPos, int numIterations) {
+  const float cubeWidth = 2.0;
+  const float oneThird = 1.0 / 3.0;
+  float spongeCube = cubeDist(Cube(vec3(-0.0, -0.0, -0.0), vec3(1.0), vec3(1.0)), rayPos / 1) * 1;
+  float mengerSpongeDist = spongeCube;
+  
+  float scale = 1.0;
+  for(int i = 0; i < numIterations; ++i) {
+    float boxedWidth = cubeWidth / scale;
+    
+    float translation = -boxedWidth / 2.0;
+    vec3 ray = rayPos - translation;
+    vec3 repeatedPos = mod(ray, boxedWidth);
+    repeatedPos += translation;
+    
+
+    repeatedPos *= scale;
+    
+    float crossesDist = cross(repeatedPos / oneThird, 1.0, vec3(0.0)) * oneThird;
+    
+    crossesDist /= scale;
+    
+    mengerSpongeDist = max(mengerSpongeDist, -crossesDist);
+    
+    scale *= 3.0;
+  }
+  return mengerSpongeDist;
+}
+
+
 
 vec4 minDist(vec3 pos) {
     vec3 clr;
@@ -365,6 +462,22 @@ vec4 minDist(vec3 pos) {
 
             color_previous_shortest_object = sphere.color;
         }    
+
+        
+        for(int i = 0; i < numOfMengerSponges; i++){
+            MengerSponge ms = getMengerSponge(i);
+
+            float new_dist = sdMengerSponge(pos - ms.pos, int(ms.iterations));
+
+            float smooth_dist = smoothMin(new_dist, dst, smoothness);
+
+            if(smooth_dist < dst){
+                dst = smooth_dist;
+                vec2 color_coeffs = calculateColorBlending(previous_shortest_non_smooth_dist, new_dist);
+                clr = Blend(previous_shortest_non_smooth_dist, new_dist, clr, ms.color, 0.5).xyz; //* (cnoise(pos*10) + 0.5);
+                previous_shortest_non_smooth_dist = Blend(previous_shortest_non_smooth_dist, new_dist, color_previous_shortest_object, ms.color, 0.5).w;
+            }
+        }
     }
 
     return vec4(dst, clr);

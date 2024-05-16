@@ -21,6 +21,13 @@ pub struct Cube{
     pub color : [f32;3]
 }
 
+#[derive(Clone, Copy)]
+pub struct MengerSponge{
+    pub pos : [f32;3],
+    pub iterations : f32,
+    pub color : [f32;3]
+}
+
 impl Sphere {
     pub fn new(pos : [f32; 3], color : [f32; 3], radius : f32) -> Self {
         Sphere { pos, color, radius}
@@ -37,5 +44,11 @@ impl Triangle {
 impl Cube {
     pub fn new(pos : [f32; 3], dim : [f32; 3],  color : [f32; 3]) -> Self {
         Cube { pos, dim, color}
+    }
+}
+
+impl MengerSponge {
+    pub fn new(pos : [f32; 3], iterations : f32,  color : [f32; 3]) -> Self {
+        MengerSponge { pos, iterations, color}
     }
 }
