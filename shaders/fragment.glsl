@@ -318,6 +318,7 @@ float cross(vec3 pos, float side_length, vec3 offset){
 
 
 
+
 float mengel_fractal_iteration_1(vec3 pos){
     float distBoundingBox = cubeDist(Cube(vec3(-0.0, -0.0, -0.0), vec3(1.0), vec3(1.0)), pos);
 
@@ -326,6 +327,7 @@ float mengel_fractal_iteration_1(vec3 pos){
     float subtraction = max(distBoundingBox, -cross_dist);
     return subtraction;
 }
+
 
 float mengerSponge2(vec3 pos){
 
@@ -348,7 +350,7 @@ float mengerSponge2(vec3 pos){
     return sub;
 }
 
-
+//https://iquilezles.org/articles/menger/
 float sdMengerSponge(vec3 rayPos, int numIterations) {
   const float cubeWidth = 2.0;
   const float oneThird = 1.0 / 3.0;
@@ -357,7 +359,6 @@ float sdMengerSponge(vec3 rayPos, int numIterations) {
   
   float scale = 1.0;
   for(int i = 0; i < numIterations; ++i) {
-    // #1 determine repeated box width
     float boxedWidth = cubeWidth / scale;
     
     float translation = -boxedWidth / 2.0;
@@ -365,13 +366,11 @@ float sdMengerSponge(vec3 rayPos, int numIterations) {
     vec3 repeatedPos = mod(ray, boxedWidth);
     repeatedPos += translation;
     
-    // #2 scale coordinate systems from 
-    // [-1/scale, 1/scale) -> to [-1.0, 1.0)
+
     repeatedPos *= scale;
     
     float crossesDist = cross(repeatedPos / oneThird, 1.0, vec3(0.0)) * oneThird;
     
-    // #3 Acquire actual distance by un-stretching
     crossesDist /= scale;
     
     mengerSpongeDist = max(mengerSpongeDist, -crossesDist);

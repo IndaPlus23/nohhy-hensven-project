@@ -118,6 +118,7 @@ impl GuiHandeler<'_>{
             let mut id_counter = 0;
 
             for i in 0..cubes.len() {
+                let mut break_ = false;
                 ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
 
                     {
@@ -144,8 +145,11 @@ impl GuiHandeler<'_>{
                     
                     if ui_inside_inside.button("Remove").clicked(){
                         cubes.remove(i); // thus remove this sphere object
+                        break_ = true;
                     }
                 });
+
+                if break_{break;}
                 id_counter += 1;
 
             }
@@ -157,6 +161,7 @@ impl GuiHandeler<'_>{
             let mut id_counter = 0;
 
             for i in 0..menger_sponges.len() {
+                let mut break_ = false;
                 ui_inside.collapsing(id_counter.to_string(), |ui_inside_inside|{
 
                     {
@@ -179,8 +184,10 @@ impl GuiHandeler<'_>{
                     
                     if ui_inside_inside.button("Remove").clicked(){
                         menger_sponges.remove(i); // thus remove this sphere object
+                        break_ = true;
                     }
                 });
+                if break_{break;}
                 id_counter += 1;
 
             }
