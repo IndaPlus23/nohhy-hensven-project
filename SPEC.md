@@ -2,6 +2,7 @@
 
 ### Language / Libraries
 * Rust
+* egui
 * GLSL
 * OpenGL
 
@@ -52,7 +53,7 @@ Normal ray-marching, intersection rendering, glow effect etc.
 
 #### Would
 * Volumetric fog
-CS2 smoke
+(CS2 smoke)
 * Render higher resolution + post-processing effects
 Make post-processing effects for cleaner renders
 

@@ -5,7 +5,7 @@ use glium::glutin::surface::WindowSurface;
 use winit::window::Window;
 
 use crate::{specific_gui_functionality::*, Camera, ObjectHandeler};
-use crate::mouse_handler::MouseHandler;
+use crate::input_handler::InputHandler;
 
 struct StateHandeler{
     pub create_object : bool,
@@ -23,7 +23,7 @@ pub struct GuiHandeler<'a>{
     egui_glium : EguiGlium,
     state_handeler : StateHandeler,
     create_object_gui : CreateRenderObjectGui<'a>,
-    mouse_handler : MouseHandler
+    mouse_handler : InputHandler
 }
 
 impl GuiHandeler<'_>{
@@ -34,7 +34,7 @@ impl GuiHandeler<'_>{
             egui_glium : egui_glium_src,
             state_handeler : StateHandeler::new(),
             create_object_gui: CreateRenderObjectGui::new(),
-            mouse_handler : MouseHandler::new()
+            mouse_handler : InputHandler::new()
         }
     }
 
@@ -52,7 +52,7 @@ impl GuiHandeler<'_>{
 
         self.egui_glium.run(&window, |egui_ctx| {
 
-            self.mouse_handler.handle(egui_ctx, camera);
+            self.mouse_handler.handle(egui_ctx, camera, object_handeler);
             
             egui::SidePanel::left("my_side_panel").show(egui_ctx, |ui| {
 

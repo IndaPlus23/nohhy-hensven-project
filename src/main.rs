@@ -12,7 +12,7 @@ use std::{fs, time::Instant};
 mod vec_util;
 mod gui;
 mod object_handler;
-mod mouse_handler;
+mod input_handler;
 mod shapes;
 mod camera;
 
@@ -135,9 +135,8 @@ fn main() {
                 let num_of_spheres = object_handeler.get_num_of_spheres() as i32;
                 let num_of_triangles = object_handeler.get_num_of_triangles() as i32;
                 let num_of_boxes = object_handeler.get_num_of_cubes() as i32;
+                let render_mode = object_handeler.get_render_mode() as i32;
                 let light_pos = [300.0f32, 100.0f32, 50.0f32];
-
-                let render_mode = 2 as i32;
                 let smoothness = 0.9 as f32;
 
                 // a bug requires us to have the matrix as a uniform, even when we dont need the matrix in the shader, which is really wierd
@@ -224,6 +223,6 @@ fn create_display(
     SimpleWindowBuilder::new()
         .set_window_builder(winit::window::WindowBuilder::new().with_resizable(true))
         .with_inner_size(1000, 700)
-        .with_title("egui_glium example")
+        .with_title("Ray marcher")
         .build(event_loop)
 }

@@ -1,6 +1,3 @@
-
-
-
 use glium::{glutin::surface::WindowSurface, implement_uniform_block};
 
 use crate::shapes::{Sphere, Triangle, Cube};
@@ -42,6 +39,7 @@ pub struct ObjectHandeler{
 
     // other stuff
     data_is_modified : bool,
+    render_mode : u8,
 }
 
 impl ObjectHandeler{
@@ -51,7 +49,8 @@ impl ObjectHandeler{
             cpu_triangles : Vec::new(),
             cpu_spheres : Vec::new(),
             cpu_cubes : Vec::new(),
-            data_is_modified : false
+            data_is_modified : false,
+            render_mode : 0
         };
         handeler.initiate(); // initiate sphere and triangle struct for glinum
         return handeler;
@@ -100,6 +99,16 @@ impl ObjectHandeler{
     pub fn add_cubes_from(&mut self, mut render_objects : Vec<Cube>){
         self.cpu_cubes.append(&mut render_objects);
         self.data_is_modified = true;
+    }
+
+    pub fn set_render_mode(&mut self, mode : u8) {
+        if mode == 0 || mode == 1 || mode == 2 {
+            self.render_mode = mode;
+        }
+    }
+
+    pub fn get_render_mode(&self) -> u8 {
+        self.render_mode
     }
 
     // temp solution until I get ssbo to work with glinum

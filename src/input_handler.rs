@@ -1,22 +1,23 @@
 use egui;
 use crate::camera::Camera;
-use crate::vec_util::*;
+use crate::{vec_util::*, ObjectHandeler};
 
-pub struct MouseHandler {
+pub struct InputHandler {
     rotation_pos : [f32;3]
 }
 
-impl MouseHandler {
+impl InputHandler {
     pub fn new() -> Self {
-        MouseHandler {
+        InputHandler {
             rotation_pos : [0., 1., 0.]
         }
     }
 
-    pub fn handle(&mut self, ctx : &egui::Context, camera : &mut Camera) {
+    pub fn handle(&mut self, ctx : &egui::Context, camera : &mut Camera, object_handler : &mut ObjectHandeler) {
         self.rotate_camera(ctx, camera, 0.00009);
         self.move_camera(ctx, camera, 0.00015);
         self.zoom(ctx, camera, 0.05);
+        self.keyboard_inputs(ctx, object_handler);
     }
 
     fn zoom(&mut self, ctx : &egui::Context, camera : &mut Camera, sensitivity : f32) {
@@ -63,6 +64,22 @@ impl MouseHandler {
 
                 camera.pos[0] += tot_move[0] * -sensitivity;
                 camera.pos[2] += tot_move[1] * sensitivity;
+            }
+        })
+    }
+
+    fn keyboard_inputs(&mut self, ctx : &egui::Context, object_handler : &mut ObjectHandeler) {
+        ctx.input(|i| {
+            let keys_down = &i.keys_down;
+
+            if keys_down.contains(&egui::Key::Num1) {
+                object_handler.set_render_mode(0);
+            }
+            if keys_down.contains(&egui::Key::Num2) {
+                object_handler.set_render_mode(1);
+            }
+            if keys_down.contains(&egui::Key::Num3) {
+                object_handler.set_render_mode(2);
             }
         })
     }

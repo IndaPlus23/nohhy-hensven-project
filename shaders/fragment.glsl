@@ -1,15 +1,14 @@
 #version 450 core
 
-
 in vec3 vColor;
 out vec4 f_color;
 
 const int MAX_SPHERES = 100;
 const int MAX_TRIANGLES = 100;
-const float MIN_DIST = 0.001;
-const int MAX_DEPTH = 100;
+const float MIN_DIST = 0.005;
+const int MAX_DEPTH = 150;
 
-const vec3 BG_CLR = vec3(0.6, 0.6, 0.6);
+const vec3 BG_CLR = vec3(0.6196, 0.6118, 0.6549);
 
 uniform int numOfSpheres;
 uniform int numOfTriangles;
@@ -18,6 +17,7 @@ uniform vec3 lightPos;
 
 // 0 : Normal
 // 1 : Intersect
+// 2 : Blend
 uniform int renderMode;
 uniform float smoothness;
 
