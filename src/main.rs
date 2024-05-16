@@ -2,7 +2,7 @@
 
 use egui::ViewportId;
 use glium::{backend::glutin::SimpleWindowBuilder, glutin::surface::WindowSurface, implement_vertex, uniform};
-use shapes::{Cube, Sphere};
+use shapes::{Cube, Sphere, MengerSponge};
 use winit::{
     event,
     event_loop::{EventLoop, EventLoopBuilder},
@@ -11,10 +11,11 @@ use std::{fs, time::Instant};
 
 mod vec_util;
 mod gui;
-mod object_handler;
+
 mod mouse_handler;
 mod shapes;
 mod camera;
+mod object_handler;
 
 use gui::*;
 use object_handler::*;
@@ -44,9 +45,11 @@ fn main() {
     let spheres = init_spheres();
     let triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
     let cubes : Vec<Cube> = vec![Cube::new([0.0, 0.0, 0.0], [0.4, 2.0, 0.4], [0.8078, 0.1647, 0.3569])];
+    let mut menger_sponges : Vec<MengerSponge> = vec![MengerSponge::new([0.0, 0.0, 0.0], 10.0, [0.8078, 0.1647, 0.3569]), MengerSponge::new([2.0, 0.0, 0.0], 10.0, [0.8078, 0.1647, 0.3569])];
     object_handeler.add_triangles_from(triangles);
     object_handeler.add_cubes_from(cubes);
     object_handeler.add_spheres_from(spheres);
+    object_handeler.add_menger_sponges_from(menger_sponges);
 
     
     // building the vertex buffer, which contains all the vertices that we will draw
@@ -93,6 +96,7 @@ fn main() {
     let mut sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
     let mut triangle_array = object_handeler.get_uniform_buffer_triangles(&display);
     let mut cube_array = object_handeler.get_uniform_buffer_cubes(&display);
+    let mut menger_sponge_array = object_handeler.get_uniform_buffer_menger_sponges(&display);
 
     // create camera 
     let mut camera = Camera::new();
@@ -118,6 +122,7 @@ fn main() {
                 sphere_array = object_handeler.get_uniform_buffer_spheres(&display);
                 triangle_array = object_handeler.get_uniform_buffer_triangles(&display);
                 cube_array = object_handeler.get_uniform_buffer_cubes(&display);
+                menger_sponge_array = object_handeler.get_uniform_buffer_menger_sponges(&display);
             }
 
             if should_quit {
@@ -135,6 +140,7 @@ fn main() {
                 let num_of_spheres = object_handeler.get_num_of_spheres() as i32;
                 let num_of_triangles = object_handeler.get_num_of_triangles() as i32;
                 let num_of_boxes = object_handeler.get_num_of_cubes() as i32;
+                let num_of_menger_sponges = object_handeler.get_num_of_menger_sponges() as i32;
                 let light_pos = [300.0f32, 100.0f32, 50.0f32];
 
                 let render_mode = 2 as i32;
@@ -161,6 +167,7 @@ fn main() {
                         numOfSpheres : num_of_spheres, 
                         numOfTriangles : num_of_triangles, 
                         numOfBoxes : num_of_boxes,
+                        numOfMengerSponges : num_of_menger_sponges,
                         renderMode : render_mode,
                         smoothness : smoothness,
                         lightPos : light_pos,
@@ -169,7 +176,8 @@ fn main() {
                         cameraFOV : camera.fov,
                         sphere_array : &*sphere_array, 
                         triangle_array : &*triangle_array,
-                        cube_array : &*cube_array
+                        cube_array : &*cube_array,
+                        menger_sponge_array : &*menger_sponge_array,
                     }, 
                     &Default::default()
                 ).unwrap();
