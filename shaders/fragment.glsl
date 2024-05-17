@@ -462,8 +462,47 @@ vec4 minDist(vec3 pos) {
 
             color_previous_shortest_object = sphere.color;
         }    
+    } else if (renderMode == 3) {
+        dst = 10000000.0;
+        
+        float previous_shortest_non_smooth_dist = 10000000.0;
+        vec3 color_previous_shortest_object = vec3(1.0);
+
+        for (int i = 0; i < numOfBoxes; i++) {
+            Cube box = getCube(i);
+
+            float new_dst = cubeDist(box, pos);
+            float s_dst = smoothMin(dst, new_dst, smoothness);
+
+            // for color blending
+            vec2 color_coeffs = calculateColorBlending(previous_shortest_non_smooth_dist, new_dst);
+            clr = Blend(previous_shortest_non_smooth_dist, new_dst, clr, box.color, 0.5).xyz;
+            previous_shortest_non_smooth_dist = Blend(previous_shortest_non_smooth_dist, new_dst, color_previous_shortest_object, box.color, 0.5).w;
+
+            if (s_dst < dst) {
+                dst = s_dst;
+            }
+            dst = s_dst;
+        }  
 
         
+        for (int i = 0; i < numOfSpheres; i++) {
+            Sphere sphere = getSphere(i);
+
+            float new_dst = sphereDist(sphere, pos);
+            float s_dst = smoothMin(dst, new_dst, smoothness);
+
+            // for color blending
+            vec2 color_coeffs = calculateColorBlending(previous_shortest_non_smooth_dist, new_dst);
+            clr = Blend(previous_shortest_non_smooth_dist, new_dst, clr, sphere.color, 0.5).xyz;
+            previous_shortest_non_smooth_dist = Blend(previous_shortest_non_smooth_dist, new_dst, color_previous_shortest_object, sphere.color, 0.5).w;
+
+            dst = s_dst;
+            color_previous_shortest_object = sphere.color;
+
+            color_previous_shortest_object = sphere.color;
+        }
+
         for(int i = 0; i < numOfMengerSponges; i++){
             MengerSponge ms = getMengerSponge(i);
 

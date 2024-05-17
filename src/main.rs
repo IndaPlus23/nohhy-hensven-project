@@ -28,7 +28,6 @@ use camera::*;
 fn init_spheres() -> Vec<Sphere> {
     vec![
         Sphere::new([0.0, 1.0, 0.0], [0.0078, 0.1647, 0.3569], 0.7),
-        Sphere::new([1.0, 0.0, 0.0], [1.0, 0.1647, 0.5], 0.7)
     ]
 }
 
@@ -45,9 +44,7 @@ fn main() {
     let spheres = init_spheres();
     let triangles : Vec<Triangle> = vec![Triangle::new([-1.5, -1.5, 1.0], [-1.5, 1.5, 1.0], [1.5, -1.5, 1.0], [0.8078, 0.1647, 0.3569])];
     let cubes : Vec<Cube> = vec![Cube::new([0.0, 0.0, 0.0], [0.4, 2.0, 0.4], [0.8078, 0.1647, 0.3569])];
-    let mut menger_sponges : Vec<MengerSponge> = vec![MengerSponge::new([0.0, 0.0, 0.0], 10.0, [0.8078, 0.1647, 0.3569]), MengerSponge::new([2.0, 0.0, 0.0], 10.0, [0.8078, 0.1647, 0.3569])];
-    object_handeler.add_triangles_from(triangles);
-    object_handeler.add_cubes_from(cubes);
+    let menger_sponges : Vec<MengerSponge> = vec![MengerSponge::new([0.0, 0.0, 0.0], 10.0, [0.8078, 0.1647, 0.3569]), MengerSponge::new([2.0, 0.0, 0.0], 10.0, [0.8078, 0.1647, 0.3569])];
     object_handeler.add_spheres_from(spheres);
     object_handeler.add_menger_sponges_from(menger_sponges);
 

@@ -65,7 +65,6 @@ impl ObjectHandeler{
             cpu_spheres : Vec::new(),
             cpu_cubes : Vec::new(),
             cpu_menger_sponges : Vec::new(),
-            data_is_modified : false
             data_is_modified : false,
             render_mode : 0
         };
@@ -87,6 +86,16 @@ impl ObjectHandeler{
     pub fn get_num_of_cubes(&self) -> usize{self.cpu_cubes.len()}
     pub fn get_num_of_menger_sponges(&self) -> usize{self.cpu_menger_sponges.len()}
 
+    pub fn set_render_mode(&mut self, mode : u8) {
+        if mode == 0 || mode == 1 || mode == 2 || mode == 3{
+            self.render_mode = mode;
+        }
+    }
+
+    pub fn get_render_mode(&self) -> u8 {
+        self.render_mode
+    }
+
     pub fn get_spheres_reference(&mut self) -> &mut Vec<Sphere>{
         &mut self.cpu_spheres
     }
@@ -97,24 +106,6 @@ impl ObjectHandeler{
 
     pub fn get_menger_sponges_reference(&mut self) -> &mut Vec<MengerSponge>{
         &mut self.cpu_menger_sponges
-    }
-
-    /*
-    fn add_render_object<T : ToGl>(&mut self, render_object : T){
-
-    }
-    */
-
-    pub fn remove_sphere(&mut self, render_object : Sphere){
-        let pos = self.cpu_spheres.iter().position(|object|{object == &render_object});
-        if let Some(pos_unwrapped) = pos{
-            self.cpu_spheres.remove(pos_unwrapped);
-        }
-    }
-
-    pub fn add_triangle(&mut self, render_object : Triangle){
-        self.cpu_triangles.push(render_object);
-        self.data_is_modified = true;
     }
 
     pub fn add_sphere(&mut self, render_object : Sphere){
@@ -152,23 +143,6 @@ impl ObjectHandeler{
         self.cpu_menger_sponges.append(&mut render_objects);
         self.data_is_modified = true;
     }
-
-    // TODO: remove()
-
-    /* 
-    // update the gpu data if neccsary
-    pub fn update(&mut self){
-        
-        match self.data_is_modified{
-            true =>{
-                self.transfer_cpu_data_to_gpu(); 
-                self.data_is_modified = false;
-            }, 
-            _=> {}
-        }
-    }
-    */
-
 
     // temp solution until I get ssbo to work with glinum
     pub fn get_uniform_buffer_spheres(&mut self, display : &glium::Display<WindowSurface>) -> glium::uniforms::UniformBuffer<SphereArray>{
@@ -220,7 +194,7 @@ impl ObjectHandeler{
                 mapping.v3[counter] = v1;
 
                 // seems as if this field is redundant in older dev_0.1??
-                let mut norm = [0.0f32; 4];
+                let norm = [0.0f32; 4];
                 //norm[..3].copy_from_slice(&triangle.);
                 mapping.norm[counter] = norm;
 

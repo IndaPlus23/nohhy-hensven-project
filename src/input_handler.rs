@@ -39,7 +39,7 @@ impl InputHandler {
             let vel = ptr_state.velocity();
             
             if !(vel.x == 0. && vel.y == 0.) {
-                if ptr_state.primary_down() {
+                if ptr_state.secondary_down() {
                     camera.rotate_around_obj(self.rotation_pos, -sensitivity * vel.x);
                 }
             }
@@ -80,6 +80,9 @@ impl InputHandler {
             }
             if keys_down.contains(&egui::Key::Num3) {
                 object_handler.set_render_mode(2);
+            }
+            if keys_down.contains(&egui::Key::Num4) {
+                object_handler.set_render_mode(3);
             }
         })
     }
